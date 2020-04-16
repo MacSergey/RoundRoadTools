@@ -14,7 +14,7 @@ namespace Test
     {
         static void Main(string[] args)
         {
-            TestMethod(-6.662f, -397.561f, -0.863f, -0.504f, 0, -68.944f, -364.025f, -0.407f, -0.913f, 0, 4, false, 324.858f, 28.155f);
+            TestMethod(11.905f, -386.700f, 0.863f, 0.505f, 1, -52.655f, -327.492f, 0.407f, 0.913f, 1, 4, false, -41.387f, -380.809f);
         }
         static void TestMethod(float sx, float sz, float sdx, float sdz, int sm, float ex, float ez, float edx, float edz, int em, int r, bool cw, float? rx = null, float? rz = null)
         {

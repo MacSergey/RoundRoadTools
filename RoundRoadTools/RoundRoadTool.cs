@@ -147,8 +147,8 @@ namespace Mod
             Debug.Log($"{nameof(StartNodeId)} = {StartNodeId}");
             Debug.Log($"{nameof(EndNodeId)} = {EndNodeId}");
 
-            var startPoint = new NodePoint(GetNodePosition(StartNodeId), GetNodeDirection(StartNodeId)) { NodeId = StartNodeId };
-            var endPoint = new NodePoint(GetNodePosition(EndNodeId), GetNodeDirection(EndNodeId)) { NodeId = EndNodeId };
+            var startPoint = new NodePoint(GetNodePosition(StartNodeId), GetNodeDirection(StartNodeId, StartSegmentId)) { NodeId = StartNodeId };
+            var endPoint = new NodePoint(GetNodePosition(EndNodeId), GetNodeDirection(EndNodeId, EndSegmentId)) { NodeId = EndNodeId };
             ShowInfo($"{startPoint}\n{endPoint}", output.m_hitPos);
 
             Calculate();
@@ -476,23 +476,15 @@ namespace Mod
         private NetNode GetNode(ushort nodeId) => NetManager.m_nodes.m_buffer[nodeId];
         private NetSegment GetSegment(ushort segmentId) => NetManager.m_segments.m_buffer[segmentId];
         private Vector3 GetNodePosition(ushort nodeId) => GetNode(nodeId).m_position;
-        private Vector3 GetNodeDirection(ushort nodeId)
+        private Vector3 GetNodeDirection(ushort nodeId, ushort segmentId)
         {
-            var node = GetNode(nodeId);
-
-            for (int i = 0; i < 8; i += 1)
-            {
-                var segmentId = node.GetSegment(i);
-                if (segmentId != 0)
-                {
-                    var segment = GetSegment(segmentId);
-                    if (segment.m_startNode == nodeId)
-                        return -segment.m_startDirection;
-                    else if (segment.m_endNode == nodeId)
-                        return -segment.m_endDirection;
-                }
-            }
-            return Vector3.zero;
+            var segment = GetSegment(segmentId);
+            if (segment.m_startNode == nodeId)
+                return -segment.m_startDirection;
+            else if (segment.m_endNode == nodeId)
+                return -segment.m_endDirection;
+            else
+                return Vector3.zero;
         }
 
         private void CheckChange<T>(ref T value, T newValue) where T : struct
@@ -579,8 +571,8 @@ namespace Mod
             if (!CanBuild || Calced)
                 return;
 
-            var startPoint = new NodePoint(GetNodePosition(StartNodeId), GetNodeDirection(StartNodeId)) { NodeId = StartNodeId };
-            var endPoint = new NodePoint(GetNodePosition(EndNodeId), GetNodeDirection(EndNodeId)) { NodeId = EndNodeId };
+            var startPoint = new NodePoint(GetNodePosition(StartNodeId), GetNodeDirection(StartNodeId, StartSegmentId)) { NodeId = StartNodeId };
+            var endPoint = new NodePoint(GetNodePosition(EndNodeId), GetNodeDirection(EndNodeId, EndSegmentId)) { NodeId = EndNodeId };
 
             CalcPoints = CalculateRoad(startPoint, endPoint, Radius * U, 5 * U, new float[0], (s) => Debug.Log(s));
 
@@ -700,7 +692,7 @@ namespace Mod
             var isSandGlass = true;
             if (startPointXDist < 0 && endPointXDist < 0)
             {
-                if (dist >= 0 && (dist < -startPointXDist || dist < -endPointXDist) & !beSandGlass)
+                if (dist < -startPointXDist && dist < -endPointXDist && !beSandGlass)
                 {
                     dist = -dist;
                     isSandGlass = false;
@@ -709,8 +701,8 @@ namespace Mod
             else if (dist < startPointXDist || dist < endPointXDist)
                     throw new RoadSmallRadiusException();
 
-            var startRoundPos = start.Position + start.Direction * (dist - startPointXDist);
-            var endRoundPos = end.Position + end.Direction * (dist - endPointXDist);
+            var startRoundPos = xPos + start.Direction * dist;
+            var endRoundPos = xPos + end.Direction * dist;
             log?.Invoke($"{nameof(startRoundPos)} = {startRoundPos.Info()}");
             log?.Invoke($"{nameof(endRoundPos)} = {endRoundPos.Info()}");
 
