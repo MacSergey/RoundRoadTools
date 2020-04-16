@@ -117,11 +117,38 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="HotkeyRadiusMinus" xml:space="preserve">
+    <value>Уменьшить радиус</value>
+  </data>
+  <data name="HotkeyRadiusPlus" xml:space="preserve">
+    <value>Увеличить радиус</value>
+  </data>
+  <data name="HotkeySandGlass" xml:space="preserve">
+    <value>Песочные часы</value>
+  </data>
+  <data name="HotkeySegmentMinus" xml:space="preserve">
+    <value>Уменшить сегмент</value>
+  </data>
+  <data name="HotkeySegmentPlus" xml:space="preserve">
+    <value>Увеличить сегмент</value>
+  </data>
   <data name="InitError" xml:space="preserve">
     <value />
   </data>
   <data name="OtherOption" xml:space="preserve">
     <value>Другие настройки</value>
+  </data>
+  <data name="Radius" xml:space="preserve">
+    <value>Радиус</value>
+  </data>
+  <data name="Segment" xml:space="preserve">
+    <value>Сегмент</value>
+  </data>
+  <data name="SelectEndInfo" xml:space="preserve">
+    <value>Выбирите конечную точку</value>
+  </data>
+  <data name="SelectStartInfo" xml:space="preserve">
+    <value>Выбирите начальную точку</value>
   </data>
   <data name="ShortCut" xml:space="preserve">
     <value>Горячие клавиши</value>

@@ -1,4 +1,5 @@
 ﻿using ColossalFramework;
+using ColossalFramework.PlatformServices;
 using ColossalFramework.Plugins;
 using ColossalFramework.UI;
 using ICities;
@@ -16,10 +17,11 @@ namespace Mod
 {
     public class UserMod : IUserMod
     {
-        public string Name => nameof(RoundRoadTools);
+        public static string SettingsFile => $"{StaticName}{nameof(SettingsFile)}";
+        public static string StaticName => nameof(RoundRoadTools);
+        public string Name => StaticName;
         public string Description => Name;
 
-        private string SettingsFile => $"{Name}{nameof(SettingsFile)}";
         public UserMod()
         {
 

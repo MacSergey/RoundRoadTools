@@ -28,7 +28,7 @@ namespace Tester
         [DataRow(-46.139f, -312.879f, -0.407f, -0.913f, 0, -35.763f, -414.584f, -0.863f, -0.504f, 0, 4, false, -180.788f, -536.336f)]
         public void TestMethod(float sx, float sz, float sdx, float sdz, int sm, float ex, float ez, float edx, float edz, int em, int r, bool cw, float rx, float rz)
         {
-            var result = RoundRoadTools.FoundRound(new NodePoint(sx, sz, sdx, sdz, (NodeDir)sm), new NodePoint(ex, ez, edx, edz, (NodeDir)em), r * RoundRoadTools.U, cw);
+            var result = RoundRoadTools.FoundRound(new NodePoint(sx, sz, sdx, sdz, mode: (NodeDir)sm), new NodePoint(ex, ez, edx, edz, mode: (NodeDir)em), r * RoundRoadTools.U, cw);
 
             Assert.AreEqual(rx, result.RoundCenterPos.x, 0.001);
             Assert.AreEqual(rz, result.RoundCenterPos.y, 0.001);
@@ -46,7 +46,7 @@ namespace Tester
         [DataRow(11.905f, -386.700f, 0.863f, 0.505f, 0, -52.655f, -327.492f, 0.407f, 0.913f, 1, 4, true)]
         public void SmallRadiusTestMethod(float sx, float sz, float sdx, float sdz, int sm, float ex, float ez, float edx, float edz, int em, int r, bool cw)
         {
-            Assert.ThrowsException<RoadSmallRadiusException>(() => RoundRoadTools.FoundRound(new NodePoint(sx, sz, sdx, sdz, (NodeDir)sm), new NodePoint(ex, ez, edx, edz, (NodeDir)em), r, cw));
+            Assert.ThrowsException<RoadSmallRadiusException>(() => RoundRoadTools.FoundRound(new NodePoint(sx, sz, sdx, sdz, mode: (NodeDir)sm), new NodePoint(ex, ez, edx, edz, mode: (NodeDir)em), r, cw));
         }
 
         [TestMethod]
@@ -63,7 +63,7 @@ namespace Tester
 
         public void ParallelLinesTestMethod(float sx, float sz, float sdx, float sdz, int sm, float ex, float ez, float edx, float edz, int em, int r, bool cw)
         {
-            Assert.ThrowsException<RoadParallelLinesException>(() => RoundRoadTools.FoundRound(new NodePoint(sx, sz, sdx, sdz, (NodeDir)sm), new NodePoint(ex, ez, edx, edz, (NodeDir)em), r, cw));
+            Assert.ThrowsException<RoadParallelLinesException>(() => RoundRoadTools.FoundRound(new NodePoint(sx, sz, sdx, sdz, mode: (NodeDir)sm), new NodePoint(ex, ez, edx, edz, mode: (NodeDir)em), r, cw));
         }
 
         [TestMethod]

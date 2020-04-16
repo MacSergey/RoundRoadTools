@@ -61,6 +61,51 @@ namespace Mod {
         }
         
         /// <summary>
+        ///   Ищет локализованную строку, похожую на Уменьшить радиус.
+        /// </summary>
+        internal static string HotkeyRadiusMinus {
+            get {
+                return ResourceManager.GetString("HotkeyRadiusMinus", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Ищет локализованную строку, похожую на Увеличить радиус.
+        /// </summary>
+        internal static string HotkeyRadiusPlus {
+            get {
+                return ResourceManager.GetString("HotkeyRadiusPlus", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Ищет локализованную строку, похожую на Песочные часы.
+        /// </summary>
+        internal static string HotkeySandGlass {
+            get {
+                return ResourceManager.GetString("HotkeySandGlass", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Ищет локализованную строку, похожую на Уменшить сегмент.
+        /// </summary>
+        internal static string HotkeySegmentMinus {
+            get {
+                return ResourceManager.GetString("HotkeySegmentMinus", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Ищет локализованную строку, похожую на Увеличить сегмент.
+        /// </summary>
+        internal static string HotkeySegmentPlus {
+            get {
+                return ResourceManager.GetString("HotkeySegmentPlus", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Ищет локализованную строку, похожую на .
         /// </summary>
         internal static string InitError {
@@ -75,6 +120,42 @@ namespace Mod {
         internal static string OtherOption {
             get {
                 return ResourceManager.GetString("OtherOption", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Ищет локализованную строку, похожую на Радиус.
+        /// </summary>
+        internal static string Radius {
+            get {
+                return ResourceManager.GetString("Radius", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Ищет локализованную строку, похожую на Сегмент.
+        /// </summary>
+        internal static string Segment {
+            get {
+                return ResourceManager.GetString("Segment", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Ищет локализованную строку, похожую на Выбирите конечную точку.
+        /// </summary>
+        internal static string SelectEndInfo {
+            get {
+                return ResourceManager.GetString("SelectEndInfo", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Ищет локализованную строку, похожую на Выбирите начальную точку.
+        /// </summary>
+        internal static string SelectStartInfo {
+            get {
+                return ResourceManager.GetString("SelectStartInfo", resourceCulture);
             }
         }
         

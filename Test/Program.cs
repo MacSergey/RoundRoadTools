@@ -18,13 +18,12 @@ namespace Test
         }
         static void TestMethod(float sx, float sz, float sdx, float sdz, int sm, float ex, float ez, float edx, float edz, int em, int r, bool cw, float? rx = null, float? rz = null)
         {
-
             //mod.CalculateShiftsIndex(1, 2, 1, 2);
 
-            var startNode = new NodePoint(sx, sz, sdx, sdz, (NodeDir)sm);
-            var endNode = new NodePoint(ex, ez, edx, edz, (NodeDir)em);
+            var startNode = new NodePoint(sx, sz, sdx, sdz, mode: (NodeDir)sm);
+            var endNode = new NodePoint(ex, ez, edx, edz, mode: (NodeDir)em);
             //var foundRoundResult = RoundRoadTools.FoundRound(startNode, endNode, r * RoundRoadTools.U, cw, (s) => Console.WriteLine(s));
-            var calcRoadResult = RoundRoadTools.CalculateRoad(startNode, endNode, r * RoundRoadTools.U, 5 * RoundRoadTools.U, new float[] {/* 3,6,9*/}, (s) => Console.WriteLine(s));
+            var calcRoadResult = RoundRoadTools.CalculateRoad(startNode, endNode, r * RoundRoadTools.U, 5 * RoundRoadTools.U, RoundRoadTools.MinSegmentLenght * RoundRoadTools.U, false, new float[] {/* 3,6,9*/}, (s) => Console.WriteLine(s));
         }
     }
 }
