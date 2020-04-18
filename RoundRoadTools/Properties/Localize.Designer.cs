@@ -61,6 +61,33 @@ namespace Mod {
         }
         
         /// <summary>
+        ///   Ищет локализованную строку, похожую на Конечное смещение.
+        /// </summary>
+        internal static string EndShift {
+            get {
+                return ResourceManager.GetString("EndShift", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Ищет локализованную строку, похожую на Уменьшить конечное смещение.
+        /// </summary>
+        internal static string HotkeyEndShiftMinus {
+            get {
+                return ResourceManager.GetString("HotkeyEndShiftMinus", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Ищет локализованную строку, похожую на Увеличить конечное смещение.
+        /// </summary>
+        internal static string HotkeyEndShiftPlus {
+            get {
+                return ResourceManager.GetString("HotkeyEndShiftPlus", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Ищет локализованную строку, похожую на Уменьшить радиус.
         /// </summary>
         internal static string HotkeyRadiusMinus {
@@ -102,6 +129,33 @@ namespace Mod {
         internal static string HotkeySegmentPlus {
             get {
                 return ResourceManager.GetString("HotkeySegmentPlus", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Ищет локализованную строку, похожую на Показать смещение.
+        /// </summary>
+        internal static string HotkeyShowShift {
+            get {
+                return ResourceManager.GetString("HotkeyShowShift", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Ищет локализованную строку, похожую на Уменьшить начальное смещение.
+        /// </summary>
+        internal static string HotkeyStartShiftMinus {
+            get {
+                return ResourceManager.GetString("HotkeyStartShiftMinus", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Ищет локализованную строку, похожую на Увеличить начальное смещение.
+        /// </summary>
+        internal static string HotkeyStartShiftPlus {
+            get {
+                return ResourceManager.GetString("HotkeyStartShiftPlus", resourceCulture);
             }
         }
         
@@ -165,6 +219,15 @@ namespace Mod {
         internal static string ShortCut {
             get {
                 return ResourceManager.GetString("ShortCut", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Ищет локализованную строку, похожую на Начальное смещение.
+        /// </summary>
+        internal static string StartShift {
+            get {
+                return ResourceManager.GetString("StartShift", resourceCulture);
             }
         }
     }

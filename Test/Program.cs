@@ -14,16 +14,19 @@ namespace Test
     {
         static void Main(string[] args)
         {
-            TestMethod(11.905f, -386.700f, 0.863f, 0.505f, 1, -52.655f, -327.492f, 0.407f, 0.913f, 1, 4, false, -41.387f, -380.809f);
+            TestMethod(-46.139f, -312.879f, 0.407f, 0.913f, 1, -35.763f, -414.584f, 0.863f, 0.504f, 1,  5, false, -41.387f, -380.809f);
         }
         static void TestMethod(float sx, float sz, float sdx, float sdz, int sm, float ex, float ez, float edx, float edz, int em, int r, bool cw, float? rx = null, float? rz = null)
         {
-            //mod.CalculateShiftsIndex(1, 2, 1, 2);
+            var StartShiftRaw = 1;
+            var EndShiftRaw = 1;
+            var delta = EndShiftRaw - StartShiftRaw;
+            var middleShifts = Enumerable.Range(1, Math.Max(0,Math.Abs(delta) - 1)).Select(i => ((float)(StartShiftRaw + Math.Sign(delta) * i)) / 2 * RoundRoadTools.P).ToArray();
 
             var startNode = new NodePoint(sx, sz, sdx, sdz, mode: (NodeDir)sm);
             var endNode = new NodePoint(ex, ez, edx, edz, mode: (NodeDir)em);
-            //var foundRoundResult = RoundRoadTools.FoundRound(startNode, endNode, r * RoundRoadTools.U, cw, (s) => Console.WriteLine(s));
-            var calcRoadResult = RoundRoadTools.CalculateRoad(startNode, endNode, r * RoundRoadTools.U, 5 * RoundRoadTools.U, RoundRoadTools.MinSegmentLenght * RoundRoadTools.U, false, new float[] {/* 3,6,9*/}, (s) => Console.WriteLine(s));
+
+            var calcRoadResult = RoundRoadTools.CalculateRoad(startNode, endNode, r * RoundRoadTools.U, 5 * RoundRoadTools.U, RoundRoadTools.MinSegmentLenght * RoundRoadTools.U, false, 3, 3, new float[0], (s) => Console.WriteLine(s));
         }
     }
 }

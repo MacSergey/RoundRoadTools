@@ -117,6 +117,15 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="EndShift" xml:space="preserve">
+    <value>Конечное смещение</value>
+  </data>
+  <data name="HotkeyEndShiftMinus" xml:space="preserve">
+    <value>Уменьшить конечное смещение</value>
+  </data>
+  <data name="HotkeyEndShiftPlus" xml:space="preserve">
+    <value>Увеличить конечное смещение</value>
+  </data>
   <data name="HotkeyRadiusMinus" xml:space="preserve">
     <value>Уменьшить радиус</value>
   </data>
@@ -131,6 +140,15 @@
   </data>
   <data name="HotkeySegmentPlus" xml:space="preserve">
     <value>Увеличить сегмент</value>
+  </data>
+  <data name="HotkeyShowShift" xml:space="preserve">
+    <value>Показать смещение</value>
+  </data>
+  <data name="HotkeyStartShiftMinus" xml:space="preserve">
+    <value>Уменьшить начальное смещение</value>
+  </data>
+  <data name="HotkeyStartShiftPlus" xml:space="preserve">
+    <value>Увеличить начальное смещение</value>
   </data>
   <data name="InitError" xml:space="preserve">
     <value />
@@ -152,5 +170,8 @@
   </data>
   <data name="ShortCut" xml:space="preserve">
     <value>Горячие клавиши</value>
+  </data>
+  <data name="StartShift" xml:space="preserve">
+    <value>Начальное смещение</value>
   </data>
 </root>
