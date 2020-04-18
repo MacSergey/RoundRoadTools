@@ -59,6 +59,7 @@
       <DependentUpon>Localize.resx</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RoundRoadCalculation.cs" />
     <Compile Include="RoundRoadTool.cs" />
     <Compile Include="UI\Buttons\RoundButton.cs" />
     <Compile Include="UI\KeyMapping.cs" />

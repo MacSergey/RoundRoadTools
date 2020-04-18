@@ -70,6 +70,15 @@ namespace Mod {
         }
         
         /// <summary>
+        ///   Ищет локализованную строку, похожую на Строить.
+        /// </summary>
+        internal static string HotkeyBuild {
+            get {
+                return ResourceManager.GetString("HotkeyBuild", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Ищет локализованную строку, похожую на Уменьшить конечное смещение.
         /// </summary>
         internal static string HotkeyEndShiftMinus {
@@ -84,6 +93,15 @@ namespace Mod {
         internal static string HotkeyEndShiftPlus {
             get {
                 return ResourceManager.GetString("HotkeyEndShiftPlus", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Ищет локализованную строку, похожую на Строить параллельную.
+        /// </summary>
+        internal static string HotkeyParallel {
+            get {
+                return ResourceManager.GetString("HotkeyParallel", resourceCulture);
             }
         }
         
@@ -133,6 +151,24 @@ namespace Mod {
         }
         
         /// <summary>
+        ///   Ищет локализованную строку, похожую на Сдвинуть  смещение к началу.
+        /// </summary>
+        internal static string HotkeyShiftBeginMinus {
+            get {
+                return ResourceManager.GetString("HotkeyShiftBeginMinus", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Ищет локализованную строку, похожую на Сдвинуть  смещение к концу.
+        /// </summary>
+        internal static string HotkeyShiftBeginPlus {
+            get {
+                return ResourceManager.GetString("HotkeyShiftBeginPlus", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Ищет локализованную строку, похожую на Показать смещение.
         /// </summary>
         internal static string HotkeyShowShift {
@@ -169,11 +205,29 @@ namespace Mod {
         }
         
         /// <summary>
+        ///   Ищет локализованную строку, похожую на Количество полос.
+        /// </summary>
+        internal static string LineCount {
+            get {
+                return ResourceManager.GetString("LineCount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Ищет локализованную строку, похожую на Другие настройки.
         /// </summary>
         internal static string OtherOption {
             get {
                 return ResourceManager.GetString("OtherOption", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Ищет локализованную строку, похожую на Предпросмотр.
+        /// </summary>
+        internal static string PreviewMode {
+            get {
+                return ResourceManager.GetString("PreviewMode", resourceCulture);
             }
         }
         
@@ -210,6 +264,15 @@ namespace Mod {
         internal static string SelectStartInfo {
             get {
                 return ResourceManager.GetString("SelectStartInfo", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Ищет локализованную строку, похожую на Смещения.
+        /// </summary>
+        internal static string Shifts {
+            get {
+                return ResourceManager.GetString("Shifts", resourceCulture);
             }
         }
         

@@ -4,7 +4,6 @@ using ColossalFramework.PlatformServices;
 using ColossalFramework.UI;
 using Mod.UI;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -16,7 +15,7 @@ namespace Mod
         #region STATIC
 
         public static int U => 8;
-        public static float P => 3.5f;
+        public static float P => 3.625f;
 
         private static Color32 StartColor => new Color32(0, 200, 81, 0);
         private static Color32 StartHoverColor => new Color32(0, 126, 51, 0);
@@ -34,6 +33,7 @@ namespace Mod
         public static bool DefaultShowShift => false;
         public static int DefaultShift => 0;
 
+
         #endregion
 
         #region PRIVATE
@@ -45,7 +45,7 @@ namespace Mod
         private TerrainManager TerrainManager => Singleton<TerrainManager>.instance;
         private ToolManager ToolManager => Singleton<ToolManager>.instance;
         #endregion
-
+        private RoundRoadCalculation Calculation { get; } = new RoundRoadCalculation();
 
         private bool Calced { get; set; }
         private string CalcedError { get; set; }
@@ -57,26 +57,10 @@ namespace Mod
         private Param<ushort> EndNodeId { get; } = new Param<ushort>(0, ushort.MinValue, ushort.MaxValue);
         private Param<ushort> StartSegmentId { get; } = new Param<ushort>(0, ushort.MinValue, ushort.MaxValue);
         private Param<ushort> EndSegmentId { get; } = new Param<ushort>(0, ushort.MinValue, ushort.MaxValue);
-        private Param<int> RawRadius { get; } = new Param<int>(0, 4, 200);
-        private Param<int> SegmentLenghtRaw { get; } = new Param<int>(5, 2, 10);
-        private Param<bool> MustSandGlass { get; } = new Param<bool>(false, false, true);
-        private Param<int> StartShiftRaw { get; } = new Param<int>(0, -20, 20);
-        private Param<int> EndShiftRaw { get; } = new Param<int>(0, -20, 20);
 
         private bool ShowShift { get; set; } = DefaultShowShift;
-        private float Radius => ((float)RawRadius) / 2 * U;
-        private float StartShift => ((float)StartShiftRaw) / 2 * P;
-        private float EndShift => ((float)EndShiftRaw) / 2 * P;
-        private float SegmentLenght => SegmentLenghtRaw * U;
-        private float[] MiddleShift
-        {
-            get
-            {
-                var delta = EndShiftRaw - StartShiftRaw;
-                var middleShifts = Enumerable.Range(1, Math.Max(0, Math.Abs(delta) - 1)).Select(i => ((float)(StartShiftRaw + Math.Sign(delta) * i)) / 2 * P).ToArray();
-                return middleShifts;
-            }
-        }
+        private bool Parallel { get; set; } = false;
+
 
         private bool StartNodeSelected => StartNodeId != 0;
         private bool EndNodeSelected => EndNodeId != 0;
@@ -87,7 +71,7 @@ namespace Mod
         private bool CanBuild => Status == SelectedStatus.All;
         private bool LetBuild { get; set; } = false;
 
-        private List<Segment> CalcSegments { get; set; }
+        private List<NodePointExtended> CalculatedPoints { get; set; }
         #endregion
 
         #region PUBLIC
@@ -113,11 +97,13 @@ namespace Mod
             EndNodeId.OnChange += OnParamChange;
             StartSegmentId.OnChange += OnParamChange;
             EndSegmentId.OnChange += OnParamChange;
-            RawRadius.OnChange += OnParamChange;
-            SegmentLenghtRaw.OnChange += OnParamChange;
-            MustSandGlass.OnChange += OnParamChange;
-            StartShiftRaw.OnChange += OnParamChange;
-            EndShiftRaw.OnChange += OnParamChange;
+            Calculation.Radius.OnChange += OnParamChange;
+            Calculation.SegmentLenght.OnChange += OnParamChange;
+            Calculation.MustSandGlass.OnChange += OnParamChange;
+            Calculation.StartShift.OnChange += OnParamChange;
+            Calculation.EndShift.OnChange += OnParamChange;
+            Calculation.LineCount.OnChange += OnParamChange;
+            Calculation.ShiftBegin.OnChange += OnParamChange;
         }
 
 
@@ -137,11 +123,11 @@ namespace Mod
             EndNodeId.Value = 0;
             StartSegmentId.Value = 0;
             EndSegmentId.Value = 0;
-            RawRadius.Value = DefaultRadius;
-            SegmentLenghtRaw.Value = DefaultSegmentLenght;
-            MustSandGlass.Value = DefaultSandGlass;
-            StartShiftRaw.Value = DefaultShift;
-            EndShiftRaw.Value = DefaultShift;
+            Calculation.Radius.Value = DefaultRadius;
+            Calculation.SegmentLenght.Value = DefaultSegmentLenght;
+            Calculation.MustSandGlass.Value = DefaultSandGlass;
+            Calculation.StartShift.Value = DefaultShift;
+            Calculation.EndShift.Value = DefaultShift;
         }
 
         #endregion
@@ -209,7 +195,8 @@ namespace Mod
             if (Input.GetMouseButtonUp(1))
                 OnMouseButton1Up();
         }
-        void OnMouseButton0Up()
+
+        private void OnMouseButton0Up()
         {
             switch (Status)
             {
@@ -223,7 +210,8 @@ namespace Mod
                     break;
             }
         }
-        void OnMouseButton1Up()
+
+        private void OnMouseButton1Up()
         {
             switch (Status)
             {
@@ -252,10 +240,11 @@ namespace Mod
 
                     if (!string.IsNullOrEmpty(CalcedError))
                         lines.Add(CalcedError);
-                    lines.Add($"{Localize.Radius}: {Radius / U:F1}{nameof(U)}");
-                    lines.Add($"{Localize.Segment}: {SegmentLenght / U:F0}{nameof(U)}");
-                    lines.Add($"{Localize.StartShift}: {StartShift / P:F1}{nameof(P)}");
-                    lines.Add($"{Localize.EndShift}: {EndShift / P:F1}{nameof(P)}");
+                    lines.Add($"{Localize.PreviewMode}: {(ShowShift ? "со смещением" : "без смещения")}");
+                    lines.Add($"{Localize.Radius}: {Calculation.RadiusProcessed / U:F2}{nameof(U)}");
+                    lines.Add($"{Localize.Segment}: {Calculation.SegmentLenghtProcessed / U:F2}{nameof(U)}");
+                    lines.Add($"{Localize.LineCount}: {Calculation.LineCount}");
+                    lines.Add($"{Localize.Shifts}: {string.Join("-", Calculation.Shifts.Select(i => i.Name).ToArray())}");
 
                     ShowToolInfo(string.Join("\n", lines.ToArray()));
                     break;
@@ -338,8 +327,20 @@ namespace Mod
                 return;
             }
 
-            foreach (var segment in CalcSegments)
-                RenderRoadSegmentOverlay(segment, cameraInfo);
+            Render(CalculatedPoints);
+            if (Parallel)
+            {
+                var delta = CalculatedPoints.First().Shift;
+                var parallelPoints = CalculatedPoints.Select(p => new NodePointExtended(p.Position + p.Shift.normalized * 2 * (p.Shift.magnitude - delta.magnitude), p.Direction, -p.Shift, p.Shift == delta ? p.NodeId : (ushort)0, p.Height)).ToList();
+                Render(parallelPoints);
+            }
+
+            void Render(List<NodePointExtended> points)
+            {
+                var segments = Calculation.CalculateSegments(points);
+                foreach (var segment in segments)
+                    RenderRoadSegmentOverlay(segment, cameraInfo);
+            }
         }
 
         private void RenderRoadSegmentOverlay(Segment segment, RenderManager.CameraInfo cameraInfo)
@@ -349,13 +350,14 @@ namespace Mod
                 a = ShowShift ? segment.StartShiftPosition : segment.StartPosition,
                 d = ShowShift ? segment.EndShiftPosition : segment.EndPosition
             };
-            NetSegment.CalculateMiddlePoints(bezier.a, segment.StartDirection, bezier.d, -segment.EndDirection, true, true, out bezier.b, out bezier.c);
+            NetSegment.CalculateMiddlePoints(bezier.a, segment.StartDirection, bezier.d, segment.EndDirection, true, true, out bezier.b, out bezier.c);
 
             var color = segment.ShiftChange ? ShiftColor : HoverColor;
             color.a = GetAlpha(NetInfo);
 
             Debug.Log($"Рендер сегмента\n{segment}\nБезье: {bezier.a};{bezier.b};{bezier.c};{bezier.d}");
-            RenderManager.OverlayEffect.DrawBezier(cameraInfo, color, bezier, NetInfo.m_halfWidth * 2f, NetInfo.m_halfWidth, NetInfo.m_halfWidth, -1f, 1280f, false, true);
+            var width = Calculation.LineCount * P;
+            RenderManager.OverlayEffect.DrawBezier(cameraInfo, color, bezier, width, width / 2, width / 2, -1f, 1280f, false, true);
         }
         private void RenderRoadSegment(NodePoint start, NodePoint end)
         {
@@ -450,37 +452,80 @@ namespace Mod
                 return;
 
             if (KeyMapping.RadiusPlus.IsPressed(e))
-                RawRadius.Value += 1;
-
+            {
+                Debug.Log($"нажата {nameof(KeyMapping.RadiusPlus)}");
+                Calculation.Radius.Value += 0.25f;
+            }
             if (KeyMapping.RadiusMinus.IsPressed(e))
-                RawRadius.Value -= 1;
+            {
+                Debug.Log($"нажата {nameof(KeyMapping.RadiusMinus)}");
+                Calculation.Radius.Value -= 0.25f;
+            }
 
             if (KeyMapping.SegmentPlus.IsPressed(e))
-                SegmentLenghtRaw.Value += 1;
-
+            {
+                Debug.Log($"нажата {nameof(KeyMapping.SegmentPlus)}");
+                Calculation.SegmentLenght.Value += 0.25f;
+            }
             if (KeyMapping.SegmentMinus.IsPressed(e))
-                SegmentLenghtRaw.Value -= 1;
+            {
+                Debug.Log($"нажата {nameof(KeyMapping.SegmentMinus)}");
+                Calculation.SegmentLenght.Value -= 0.25f;
+            }
 
             if (KeyMapping.StartShiftPlus.IsPressed(e))
-                StartShiftRaw.Value += 1;
-
+            {
+                Debug.Log($"нажата {nameof(KeyMapping.StartShiftPlus)}");
+                Calculation.StartShift.Value += 1;
+            }
             if (KeyMapping.StartShiftMinus.IsPressed(e))
-                StartShiftRaw.Value -= 1;
+            {
+                Debug.Log($"нажата {nameof(KeyMapping.StartShiftMinus)}");
+                Calculation.StartShift.Value -= 1;
+            }
 
             if (KeyMapping.EndShiftPlus.IsPressed(e))
-                EndShiftRaw.Value += 1;
-
+            {
+                Debug.Log($"нажата {nameof(KeyMapping.EndShiftPlus)}");
+                Calculation.EndShift.Value += 1;
+            }
             if (KeyMapping.EndShiftMinus.IsPressed(e))
-                EndShiftRaw.Value -= 1;
+            {
+                Debug.Log($"нажата {nameof(KeyMapping.EndShiftMinus)}");
+                Calculation.EndShift.Value -= 1;
+            }
+
+            if (KeyMapping.ShiftBeginPlus.IsPressed(e))
+            {
+                Debug.Log($"нажата {nameof(KeyMapping.ShiftBeginPlus)}");
+                Calculation.ShiftBegin.Value += 1;
+            }
+            if (KeyMapping.ShiftBeginMinus.IsPressed(e))
+            {
+                Debug.Log($"нажата {nameof(KeyMapping.ShiftBeginMinus)}");
+                Calculation.ShiftBegin.Value -= 1;
+            }
 
             if (KeyMapping.SandGlass.IsPressed(e))
-                MustSandGlass.Value = !MustSandGlass;
-
+            {
+                Debug.Log($"нажата {nameof(KeyMapping.SandGlass)}");
+                Calculation.MustSandGlass.Value = !Calculation.MustSandGlass;
+            }
             if (KeyMapping.ShowShift.IsPressed(e))
+            {
+                Debug.Log($"нажата {nameof(KeyMapping.ShowShift)}");
                 ShowShift = !ShowShift;
-
+            }
+            if (KeyMapping.Parallel.IsPressed(e))
+            {
+                Debug.Log($"нажата {nameof(KeyMapping.Parallel)}");
+                Parallel = !Parallel;
+            }
             if (KeyMapping.Build.IsPressed(e))
+            {
+                Debug.Log($"нажата {nameof(KeyMapping.Build)}");
                 LetBuild = true;
+            }
         }
 
         #region INFO
@@ -579,8 +624,9 @@ namespace Mod
 
                 Debug.LogWarning($"{nameof(RoundRoadTools)}.{nameof(Build)}");
 
-                foreach (var segment in CalcSegments)
-                    CreateSegment(segment);
+                var segments = Calculation.CalculateSegments(CalculatedPoints);
+                foreach (var segment in segments)
+                    BuildSegment(segment);
 
                 return true;
             }
@@ -595,23 +641,23 @@ namespace Mod
             }
         }
 
-        public ushort CreateSegment(Segment segment)
+        public ushort BuildSegment(Segment segment)
         {
-            CreateNode(segment.Start);
-            CreateNode(segment.End);
+            BuildNode(segment.Start, false);
+            BuildNode(segment.End, false);
 
             Debug.LogWarning($"Создание сегмента\n{segment}");
             var random = new Randomizer();
-            NetManager.CreateSegment(out ushort segmentId, ref random, NetInfo, segment.Start.NodeId, segment.End.NodeId, segment.StartDirection, -segment.EndDirection, GetCurrentBuildIndex(), GetCurrentBuildIndex(), false);
+            NetManager.CreateSegment(out ushort segmentId, ref random, NetInfo, segment.Start.NodeId, segment.End.NodeId, segment.StartDirection, segment.EndDirection, GetCurrentBuildIndex(), GetCurrentBuildIndex(), false);
 
             return segmentId;
         }
-        public ushort CreateNode(NodePointExtended point, bool terrain = true)
+        public ushort BuildNode(NodePointExtended point, bool terrain = true)
         {
             if (point.NodeCreated)
                 return point.NodeId;
 
-            var position = point.Position.ToVector3();
+            var position = point.Position.ToVector3(point.Height);
             if (terrain)
                 position.y = TerrainManager.SampleRawHeightSmoothWithWater(position, false, 0);
 
@@ -636,7 +682,8 @@ namespace Mod
 
             try
             {
-                CalcSegments = CalculateRoad(startPoint, endPoint, Radius, SegmentLenght, MinSegmentLenght, MustSandGlass, StartShift, EndShift, MiddleShift, (s) => Debug.Log(s));
+                CalculatedPoints = Calculation.CalculateRoad(startPoint, endPoint, (s) => Debug.Log(s));
+
                 Calced = true;
                 CalcedError = null;
             }
@@ -653,225 +700,7 @@ namespace Mod
             }
         }
 
-        public static List<Segment> CalculateRoad(NodePoint startRaw, NodePoint endRaw, float radius, float partLength, float minLength, bool mastSandGlass, float startShift, float endShift, float[] middleShifts, Action<string> log = null)
-        {
-            log?.Invoke("Рассчет дороги");
-
-            var startShifted = CalculateShiftPoint(startRaw, startShift, NodeDir.Forward);
-            var endShifted = CalculateShiftPoint(endRaw, endShift, NodeDir.Backward);
-            var transitions = CalculateTransition(startShift, endShift, middleShifts);
-
-            var foundRound = FoundRound(startShifted, endShifted, radius, mastSandGlass, log: log);
-
-            var startPart = CalculateStraightPoints(startShifted.Position, foundRound.StartRoundPos, startShifted.Direction, partLength, minLength, false);
-            var endPart = CalculateStraightPoints(endShifted.Position, foundRound.EndRoundPos, endShifted.Direction, partLength, minLength, true);
-            var minRoundParts = Math.Max(0, transitions.Count - startPart.Count - endPart.Count);
-            var roundPart = CalculateRoundPoints(radius, partLength, minLength, minRoundParts, foundRound);
-
-            log?.Invoke($"Начальная часть - {startPart.Count}\n{string.Join("\n", startPart.Select(i => i.ToString()).ToArray())}");
-            log?.Invoke($"Закругленная часть - {roundPart.Count}\n{string.Join("\n", roundPart.Select(i => i.ToString()).ToArray())}");
-            log?.Invoke($"Конечная часть - {endPart.Count}\n{string.Join("\n", endPart.Select(i => i.ToString()).ToArray())}");
-
-            var segments = CalculateSegments(startShifted, new NodePoint(endShifted.Position, -endShifted.Direction, endShifted.NodeId), startPart, endPart, roundPart, transitions);
-
-            log?.Invoke($"Дорога расчитана: {segments.Count} сегментов\n{string.Join("\n", segments.Select((s, i) => $"[{i + 1}]\n{s}").ToArray())}");
-
-            return segments;
-        }
-        public static NodePoint CalculateShiftPoint(NodePoint point, float shift, NodeDir nodeDir)
-        {
-            var shiftVector = point.Direction.Turn90(nodeDir == NodeDir.Forward).normalized * shift;
-            var shiftPoint = new NodePoint(point.Position + shiftVector, point.Direction, point.NodeId);
-            return shiftPoint;
-        }
-        public static FoundRoundResult FoundRound(NodePoint start, NodePoint end, float radius, bool mastSandGlass = false, Action<string> log = null)
-        {
-            log?.Invoke("Поиск круга");
-
-            log?.Invoke($"{nameof(start)} = {start}");
-            log?.Invoke($"{nameof(end)} = {end}");
-            log?.Invoke($"{nameof(radius)} = {radius}");
-            log?.Invoke($"{nameof(mastSandGlass)} = {mastSandGlass}");
-
-            if (!Line2.Intersect(start.Position, start.Position - start.Direction, end.Position, end.Position - end.Direction, out float startPointXDist, out float endPointXDist) || (Mathf.Abs(startPointXDist) > 10000 && Mathf.Abs(endPointXDist) > 10000))
-                throw new RoadParallelLinesException();
-
-            log?.Invoke($"{nameof(startPointXDist)} = {startPointXDist}");
-            log?.Invoke($"{nameof(endPointXDist)} = {endPointXDist}");
-
-            var xPosS = start.Position - (start.Direction * startPointXDist);
-            var xPosE = end.Position - (end.Direction * endPointXDist);
-            var xPos = (xPosS + xPosE) / 2;
-            log?.Invoke($"{nameof(xPosS)} = {xPosS.Info()}");
-            log?.Invoke($"{nameof(xPosE)} = {xPosE.Info()}");
-            log?.Invoke($"{nameof(xPos)} = {xPos.Info()}");
-
-            var angle = Mathf.Abs(Vector2.Angle(start.Direction, end.Direction));
-            log?.Invoke($"{nameof(angle)} = {angle}");
-
-            var dist = radius / Mathf.Tan(angle / 2 * Mathf.Deg2Rad);
-            log?.Invoke($"{nameof(dist)} = {dist}");
-
-            var isSandGlass = true;
-            if (startPointXDist < 0 && endPointXDist < 0)
-            {
-                if (dist < -startPointXDist && dist < -endPointXDist && !mastSandGlass)
-                {
-                    dist = -dist;
-                    isSandGlass = false;
-                }
-            }
-            else if (dist < startPointXDist || dist < endPointXDist)
-                throw new RoadSmallRadiusException();
-
-            var startRoundPos = xPos + start.Direction * dist;
-            var endRoundPos = xPos + end.Direction * dist;
-            log?.Invoke($"{nameof(startRoundPos)} = {startRoundPos.Info()}");
-            log?.Invoke($"{nameof(endRoundPos)} = {endRoundPos.Info()}");
-
-            var distXO = Mathf.Sqrt(Mathf.Pow(radius, 2) + Mathf.Pow(dist, 2));
-            var dirXO = Mathf.Sign(dist) * (start.Direction + end.Direction).normalized;
-            log?.Invoke($"{nameof(distXO)} = {distXO}");
-            log?.Invoke($"{nameof(dirXO)} = {dirXO.Info()}");
-
-            var roundCenterPos = xPos + (distXO * dirXO);
-            log?.Invoke($"{nameof(roundCenterPos)} = {roundCenterPos} ({roundCenterPos.Info()})");
-
-            var isClockWise = IsClockWise(start.Direction, startRoundPos, roundCenterPos);
-
-            log?.Invoke($"{nameof(isSandGlass)} = {isSandGlass}");
-            log?.Invoke($"{nameof(isClockWise)} = {isClockWise}");
-
-            var result = new FoundRoundResult()
-            {
-                RoundCenterPos = roundCenterPos,
-                StartRoundPos = startRoundPos,
-                EndRoundPos = endRoundPos,
-                Angle = 180 + (isSandGlass ? angle : -angle),
-                IsSandGlass = isSandGlass,
-                IsClockWise = isClockWise
-            };
-            return result;
-        }
-        public static List<Segment> CalculateSegments(NodePoint startPoint, NodePoint endPoint, List<NodePoint> startPart, List<NodePoint> endPart, List<NodePoint> roundPart, List<Transition> transitions)
-        {
-            var startTransitions = startPart.Count;
-            var endTransitions = startTransitions + roundPart.Count;
-            var transitionsCount = transitions.Count;
-
-            if (startTransitions + transitionsCount < endTransitions)
-                endTransitions = startTransitions + transitionsCount;
-            else if (transitionsCount < endTransitions)
-                startTransitions = endTransitions - transitionsCount;
-            else
-            {
-                startTransitions = 0;
-                endTransitions = transitionsCount;
-            }
-
-            var points = new List<NodePoint>();
-            //points.Add(startPoint);
-            points.AddRange(startPart);
-            points.AddRange(roundPart);
-            points.AddRange(endPart);
-            //points.Add(endPoint);
-
-            var startTransition = new Transition(transitions.First().StartShift, transitions.First().StartShift);
-            transitions.InsertRange(0, Enumerable.Range(0, startTransitions).Select(i => startTransition));
-
-            var endTransition = new Transition(transitions.Last().EndShift, transitions.Last().EndShift);
-            transitions.AddRange(Enumerable.Range(0, points.Count + 1 - endTransitions).Select(i => endTransition));
-
-            var extendetPoints = new List<NodePointExtended>();
-
-            extendetPoints.Add(CreatePoint(startPoint, transitions.First().StartShift));
-            extendetPoints.AddRange(points.Select((p, i) => CreatePoint(p, transitions[i].EndShift)));
-            extendetPoints.Add(CreatePoint(endPoint, transitions.Last().EndShift));
-
-            var segments = Enumerable.Range(0, extendetPoints.Count - 1).Select(i => new Segment(extendetPoints[i], extendetPoints[i + 1])).ToList();
-
-
-            //foreach (var i in Enumerable.Range(0, transitions.Count))
-            //{
-            //    var startShift = points[i].Direction.Turn90(true) * transitions[i].StartShift;
-            //    var endShift = points[i + 1].Direction.Turn90(true) * transitions[i].EndShift;
-            //    var segmentStart = new NodePointExtended(points[i].Position - startShift, points[i].Direction, startShift, points[i].NodeId);
-            //    var segmentEnd = new NodePointExtended(points[i + 1].Position - endShift, -points[i + 1].Direction, endShift, points[i].NodeId);
-
-            //    segments.Add(new Segment(segmentStart, segmentEnd));
-            //}
-
-            return segments;
-
-            NodePointExtended CreatePoint(NodePoint p, float shift)
-            {
-                var shiftVector = p.Direction.Turn90(true) * shift;
-                return new NodePointExtended(p.Position - shiftVector, p.Direction, shiftVector, p.NodeId);
-            }
-        }
-        public static List<Transition> CalculateTransition(float startShift, float endShift, float[] middleShifts)
-        {
-            var shifts = new List<float>();
-
-            shifts.Add(startShift);
-            shifts.AddRange(middleShifts ?? new float[0]);
-            shifts.Add(endShift);
-
-            var transitions = new List<Transition>();
-
-            for (int i = 0; i < shifts.Count - 1; i += 1)
-                transitions.Add(new Transition(shifts[i], shifts[i + 1]));
-
-            return transitions;
-        }
-        public static List<NodePoint> CalculateStraightPoints(Vector2 startPos, Vector2 endPos, Vector2 direction, float partLength, float minLength, bool flip)
-        {
-            var distance = Vector2.Distance(startPos, endPos);
-            var parts = GetPartCount(distance, partLength);
-            if (distance / parts < minLength)
-                parts -= 1;
-
-            var points = new List<NodePoint>(parts);
-
-            foreach (var i in Enumerable.Range(1, parts))
-            {
-                var position = startPos + direction * (distance / parts * i);
-                points.Add(new NodePoint(position, flip ? -direction : direction));
-            }
-            if (flip)
-                points.Reverse();
-
-            return points;
-        }
-        public static List<NodePoint> CalculateRoundPoints(float radius, float partLength, float minLength, int minParts, FoundRoundResult foundRound)
-        {
-            var distance = GetRoundDistance(radius, foundRound.Angle);
-            var parts = Math.Max(minParts, GetPartCount(distance, partLength));
-            if (parts > Math.Max(1, minParts) && distance / parts < minLength)
-                parts -= 1;
-
-            var startVector = (foundRound.StartRoundPos - foundRound.RoundCenterPos).normalized;
-            var points = new List<NodePoint>(parts);
-
-            foreach (var i in Enumerable.Range(1, parts - 1))
-            {
-                var normal = startVector.Turn(foundRound.Angle / parts * i, foundRound.IsClockWise).normalized;
-                var position = foundRound.RoundCenterPos + normal * radius;
-                var direction = normal.Turn90(foundRound.IsClockWise);
-
-                points.Add(new NodePoint(position, direction));
-            }
-
-            return points;
-        }
-        public static float GetRoundDistance(float radius, float angle) => radius * angle * Mathf.Deg2Rad;
-        public static int GetPartCount(float distance, float length) => (int)Mathf.Ceil(distance / length);
-        public static bool IsClockWise(Vector2 startDir, Vector2 startRoundPoint, Vector2 roundCenter)
-        {
-            var v1 = startDir.Turn90(true).normalized;
-            var v2 = (startRoundPoint - roundCenter).normalized;
-            return (v1 + v2).magnitude < 0.001f;
-        }
+        
 
         #endregion
     }
@@ -884,43 +713,70 @@ namespace Mod
         End = 2,
         All = Start | End,
     }
-    public enum NodeDir
+    public enum Direction
     {
         Forward = 0,
         Backward = 1
     }
+    public class Point
+    {
+        public Vector2 Position { get; }
+        public float Height { get; set; }
+        public ushort NodeId { get; set; } = 0;
+        public bool NodeCreated => NodeId != 0;
+
+        public Point(Vector2 position, ushort nodeId = 0, float height = 0)
+        {
+            Position = position;
+            Height = height;
+            NodeId = nodeId;
+        }
+        public override string ToString() => $"{nameof(Position)}: {Position.Info()}, {nameof(Height)}: {Height}}";
+    }
+    public class DirectionPoint
+    {
+        public Point Point { get; set; }
+        public Vector2 Direction { get; }
+
+        public override string ToString() => $"{Point}, {nameof(Direction)}: {Direction.Info()}";
+    }
+
     public class NodePoint
     {
         public Vector2 Position { get; }
         public Vector2 Direction { get; }
+        public float Height { get; set; }
         public ushort NodeId { get; set; } = 0;
         public bool NodeCreated => NodeId != 0;
 
-        public NodePoint(Vector2 position, Vector2 direction, ushort nodeId = 0, NodeDir mode = NodeDir.Forward)
+        public NodePoint(Vector2 position, Vector2 direction, ushort nodeId = 0, float height = 0)
         {
             Position = position;
-            Direction = (mode == NodeDir.Forward ? direction : -direction).normalized;
+            Direction = direction.normalized;
+            Height = height;
             NodeId = nodeId;
         }
-        public NodePoint(Vector3 position, Vector3 direction, ushort nodeId = 0, NodeDir mode = NodeDir.Forward) : this(VectorUtils.XZ(position), VectorUtils.XZ(direction), nodeId, mode) { }
-        public NodePoint(float positionX, float positionZ, float directionX, float directionZ, ushort nodeId = 0, NodeDir mode = NodeDir.Forward) : this(new Vector2(positionX, positionZ), new Vector2(directionX, directionZ), nodeId, mode) { }
+        public NodePoint(Vector3 position, Vector3 direction, ushort nodeId = 0) : this(VectorUtils.XZ(position), VectorUtils.XZ(direction), nodeId, position.y) { }
+        public NodePoint(float positionX, float positionZ, float directionX, float directionZ, ushort nodeId = 0, float height = 0) : this(new Vector2(positionX, positionZ), new Vector2(directionX, directionZ), nodeId, height) { }
 
-        public override string ToString() => $"{nameof(Position)}: {Position.Info()}, {nameof(Direction)}: {Direction.Info()}";
+        public static NodePoint operator -(NodePoint point) => new NodePoint(point.Position, -point.Direction, point.NodeId, point.Height);
+
+        public override string ToString() => $"{nameof(Position)}: {Position.Info()}, {nameof(Height)}: {Height}, {nameof(Direction)}: {Direction.Info()}";
     }
     public class NodePointExtended : NodePoint
     {
-        public Vector2 Shift { get; }
+        public Vector2 Shift { get; set; }
         public Vector2 ShiftPosition => Position + Shift;
         public bool HasShift => Shift != Vector2.zero;
-        public NodePointExtended(Vector2 position, Vector2 direction, Vector2 shift, ushort nodeId = 0, NodeDir nodeDir = NodeDir.Forward) : base(position, direction, nodeId, nodeDir)
+        public NodePointExtended(Vector2 position, Vector2 direction, Vector2? shift = null, ushort nodeId = 0, float height = 0) : base(position, direction, nodeId, height)
         {
-            Shift = shift;
+            Shift = shift ?? Vector2.zero;
         }
-        public NodePointExtended(Vector2 position, Vector2 direction, ushort nodeId = 0, NodeDir nodeDir = NodeDir.Forward) : this(position, direction, Vector2.zero, nodeId, nodeDir) { }
-        public NodePointExtended(NodePoint point, Vector2 shift, ushort nodeId = 0, NodeDir nodeDir = NodeDir.Forward) : this(point.Position, point.Direction, shift, nodeId, nodeDir) { }
-        public NodePointExtended(NodePoint point, ushort nodeId = 0, NodeDir nodeDir = NodeDir.Forward) : this(point, Vector2.zero, nodeId, nodeDir) { }
+        public NodePointExtended(NodePoint point, Vector2? shift = null, ushort nodeId = 0, float height = 0) : this(point.Position, point.Direction, shift, nodeId, height) { }
 
-        public NodePointExtended Around() => new NodePointExtended(Position, Direction, Shift, NodeId, NodeDir.Backward);
+        public static NodePointExtended operator -(NodePointExtended point) => new NodePointExtended(point.Position, -point.Direction, point.Shift, point.NodeId, point.Height);
+
+        public NodePointExtended Invert() => Shift == Vector2.zero ? this : new NodePointExtended(Position - 2 * Shift, Direction, -Shift, height: Height);
 
         public override string ToString() => $"{base.ToString()}, {nameof(Shift)}: {Shift.Info()}";
     }
@@ -930,13 +786,13 @@ namespace Mod
         public NodePointExtended End { get; }
 
         public Vector3 StartDirection => Start.Direction.ToVector3(norm: true);
-        public Vector3 EndDirection => End.Direction.ToVector3(norm: true);
+        public Vector3 EndDirection => -End.Direction.ToVector3(norm: true);
 
-        public Vector3 StartPosition => Start.Position.ToVector3();
-        public Vector3 EndPosition => End.Position.ToVector3();
+        public Vector3 StartPosition => Start.Position.ToVector3(Start.Height);
+        public Vector3 EndPosition => End.Position.ToVector3(End.Height);
 
-        public Vector3 StartShiftPosition => Start.ShiftPosition.ToVector3();
-        public Vector3 EndShiftPosition => End.ShiftPosition.ToVector3();
+        public Vector3 StartShiftPosition => Start.ShiftPosition.ToVector3(Start.Height);
+        public Vector3 EndShiftPosition => End.ShiftPosition.ToVector3(End.Height);
 
         public bool HasShift => Start.HasShift || End.HasShift;
         public bool ShiftChange => Mathf.Abs(Start.Shift.magnitude - End.Shift.magnitude) > 0.1;
@@ -947,17 +803,6 @@ namespace Mod
             End = endPoint;
         }
         public override string ToString() => $"{nameof(Start)} - {Start}\n{nameof(End)} - {End}";
-    }
-    public class Transition
-    {
-        public float StartShift { get; }
-        public float EndShift { get; }
-        public Transition(float startShift, float endShift)
-        {
-            StartShift = startShift;
-            EndShift = endShift;
-        }
-        public override string ToString() => $"{nameof(StartShift)} = {StartShift}; {nameof(EndShift)} = {EndShift}";
     }
     public class Param<T> where T : IComparable<T>
     {
@@ -979,9 +824,9 @@ namespace Mod
         public event Action OnChange;
         public Param(T value, T minValue, T maxValue)
         {
-            Value = value;
             MinValue = minValue;
             MaxValue = maxValue;
+            Value = value;
         }
         private T Max(T v1, T v2) => v1.CompareTo(v2) > 0 ? v1 : v2;
         private T Min(T v1, T v2) => v1.CompareTo(v2) < 0 ? v1 : v2;
@@ -990,6 +835,16 @@ namespace Mod
         public static implicit operator T(Param<T> param) => param.Value;
 
         public override string ToString() => Value.ToString();
+    }
+    public struct Line
+    {
+        public float Shift;
+        public string Name;
+        public Line(float shift, string name)
+        {
+            Shift = shift;
+            Name = name;
+        }
     }
     public struct FoundRoundResult
     {

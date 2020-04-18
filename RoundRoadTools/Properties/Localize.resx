@@ -120,11 +120,17 @@
   <data name="EndShift" xml:space="preserve">
     <value>Конечное смещение</value>
   </data>
+  <data name="HotkeyBuild" xml:space="preserve">
+    <value>Строить</value>
+  </data>
   <data name="HotkeyEndShiftMinus" xml:space="preserve">
     <value>Уменьшить конечное смещение</value>
   </data>
   <data name="HotkeyEndShiftPlus" xml:space="preserve">
     <value>Увеличить конечное смещение</value>
+  </data>
+  <data name="HotkeyParallel" xml:space="preserve">
+    <value>Строить параллельную</value>
   </data>
   <data name="HotkeyRadiusMinus" xml:space="preserve">
     <value>Уменьшить радиус</value>
@@ -141,6 +147,12 @@
   <data name="HotkeySegmentPlus" xml:space="preserve">
     <value>Увеличить сегмент</value>
   </data>
+  <data name="HotkeyShiftBeginMinus" xml:space="preserve">
+    <value>Сдвинуть  смещение к началу</value>
+  </data>
+  <data name="HotkeyShiftBeginPlus" xml:space="preserve">
+    <value>Сдвинуть  смещение к концу</value>
+  </data>
   <data name="HotkeyShowShift" xml:space="preserve">
     <value>Показать смещение</value>
   </data>
@@ -153,8 +165,14 @@
   <data name="InitError" xml:space="preserve">
     <value />
   </data>
+  <data name="LineCount" xml:space="preserve">
+    <value>Количество полос</value>
+  </data>
   <data name="OtherOption" xml:space="preserve">
     <value>Другие настройки</value>
+  </data>
+  <data name="PreviewMode" xml:space="preserve">
+    <value>Предпросмотр</value>
   </data>
   <data name="Radius" xml:space="preserve">
     <value>Радиус</value>
@@ -167,6 +185,9 @@
   </data>
   <data name="SelectStartInfo" xml:space="preserve">
     <value>Выбирите начальную точку</value>
+  </data>
+  <data name="Shifts" xml:space="preserve">
+    <value>Смещения</value>
   </data>
   <data name="ShortCut" xml:space="preserve">
     <value>Горячие клавиши</value>
