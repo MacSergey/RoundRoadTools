@@ -61,7 +61,7 @@ namespace Mod
         public float[] ShiftsValue => Shifts.Any() ? Shifts.Select(l => l.Shift * RoundRoadTools.P).ToArray() : new float[] { 0 };
 
 
-        public List<NodePointExtended> CalculateRoad(NodePoint startRaw, NodePoint endRaw, Action<string> log = null)
+        public List<DirectionPointExtended> CalculateRoad(DirectionPoint startRaw, DirectionPoint endRaw, Action<string> log = null)
         {
             var radius = RadiusProcessed;
             var shifts = ShiftsValue;
@@ -108,13 +108,13 @@ namespace Mod
 
             return points;
         }
-        public NodePoint CalculateShiftPoint(NodePoint point, float shift, Direction nodeDir)
+        public DirectionPoint CalculateShiftPoint(DirectionPoint point, float shift, Direction nodeDir)
         {
             var shiftVector = point.Direction.Turn90(nodeDir == Direction.Forward).normalized * shift;
-            var shiftPoint = new NodePoint(point.Position + shiftVector, point.Direction, point.NodeId, point.Height);
+            var shiftPoint = new DirectionPoint(point.Position + shiftVector, point.Direction, point.Height, point.NodeId);
             return shiftPoint;
         }
-        public FoundRoundResult FoundRound(NodePoint start, NodePoint end, float radius, bool mastSandGlass = false, Action<string> log = null)
+        public FoundRoundResult FoundRound(DirectionPoint start, DirectionPoint end, float radius, bool mastSandGlass = false, Action<string> log = null)
         {
             log?.Invoke("Поиск круга");
 
@@ -183,11 +183,11 @@ namespace Mod
             };
             return result;
         }
-        public List<NodePointExtended> CalculatePoints(NodePoint startPoint, NodePoint endPoint, List<NodePoint> startPart, List<NodePoint> endPart, List<NodePoint> roundPart, float[] shifts, int shiftBegin)
+        public List<DirectionPointExtended> CalculatePoints(DirectionPoint startPoint, DirectionPoint endPoint, List<DirectionPoint> startPart, List<DirectionPoint> endPart, List<DirectionPoint> roundPart, float[] shifts, int shiftBegin)
         {
             var pointsShift = CalculateShifts(shifts, shiftBegin, startPart.Count, endPart.Count, roundPart.Count);
 
-            var points = new List<NodePointExtended>();
+            var points = new List<DirectionPointExtended>();
 
             points.Add(CreatePoint(startPoint));
             points.AddRange(startPart.Select(p => CreatePoint(p)));
@@ -195,18 +195,19 @@ namespace Mod
             points.AddRange(endPart.Select(p => CreatePoint(p)));
             points.Add(CreatePoint(endPoint));
 
-            NodePointExtended CreatePoint(NodePoint p)
+            DirectionPointExtended CreatePoint(DirectionPoint p)
             {
                 var shift = pointsShift[points.Count];
                 var shiftVector = p.Direction.Turn90(true) * shift;
-                return new NodePointExtended(p.Position - shiftVector, p.Direction, shiftVector, p.NodeId, p.Height);
+                //return new NodePointExtended(p.Position - shiftVector, p.Direction, shiftVector, p.NodeId, p.Height);
+                return new DirectionPointExtended(p.Position - shiftVector, p.Direction, shiftVector, p.Height, p.NodeId);
             }
 
             CalculateHeight(points);
 
             return points;
         }
-        public List<Segment> CalculateSegments(List<NodePointExtended> points) => SelectRange(0, points.Count - 1, i => new Segment(points[i], points[i + 1])).ToList();
+        public List<Segment> CalculateSegments(List<DirectionPointExtended> points) => SelectRange(0, points.Count - 1, i => new Segment(points[i], points[i + 1])).ToList();
         public List<float> CalculateShifts(float[] shifts, int shiftBegin, int start, int end, int round)
         {
             var pointsCount = 1 + start + round + end + 1;
@@ -222,7 +223,7 @@ namespace Mod
 
             return pointsShift;
         }
-        public void CalculateHeight(List<NodePointExtended> points)
+        public void CalculateHeight(List<DirectionPointExtended> points)
         {
             var lengths = SelectRange(0, points.Count - 1, i => CalcucalePartLenght(points[i], points[i + 1])).ToArray();
             var sumLength = lengths.Sum();
@@ -240,7 +241,7 @@ namespace Mod
                 return currentLenth;
             }
         }
-        public float CalcucalePartLenght(NodePoint point1, NodePoint point2)
+        public float CalcucalePartLenght(DirectionPoint point1, DirectionPoint point2)
         {
             var bezier = new Bezier3 { a = point1.Position.ToVector3(), d = point2.Position.ToVector3() };
             NetSegment.CalculateMiddlePoints(bezier.a, point1.Direction.ToVector3(), bezier.d, -point2.Direction.ToVector3(), true, true, out bezier.b, out bezier.c);
@@ -254,26 +255,26 @@ namespace Mod
             var distance = SelectRange(0, points.Length - 1, i => (points[i + 1] - points[i]).magnitude).Sum();
             return distance;
         }
-        public List<NodePoint> CalculateStraightPoints(Vector2 startPos, Vector2 endPos, Vector2 direction, float partLength, float minLength, bool flip)
+        public List<DirectionPoint> CalculateStraightPoints(Vector2 startPos, Vector2 endPos, Vector2 direction, float partLength, float minLength, bool flip)
         {
             var distance = GetStraightDistance(startPos, endPos);
             var parts = GetPartCount(distance, partLength);
             if (distance / parts < minLength)
                 parts -= 1;
 
-            var points = new List<NodePoint>(parts);
+            var points = new List<DirectionPoint>(parts);
 
             foreach (var i in Enumerable.Range(1, parts))
             {
                 var position = startPos + direction * (distance / parts * i);
-                points.Add(new NodePoint(position, flip ? -direction : direction));
+                points.Add(new DirectionPoint(position, flip ? -direction : direction));
             }
             if (flip)
                 points.Reverse();
 
             return points;
         }
-        public List<NodePoint> CalculateRoundPoints(float radius, float partLength, float minLength, int minParts, FoundRoundResult foundRound)
+        public List<DirectionPoint> CalculateRoundPoints(float radius, float partLength, float minLength, int minParts, FoundRoundResult foundRound)
         {
             var distance = GetRoundDistance(radius, foundRound.Angle);
             var parts = Math.Max(minParts, GetPartCount(distance, partLength));
@@ -281,7 +282,7 @@ namespace Mod
                 parts -= 1;
 
             var startVector = (foundRound.StartRoundPos - foundRound.RoundCenterPos).normalized;
-            var points = new List<NodePoint>(parts);
+            var points = new List<DirectionPoint>(parts);
 
             foreach (var i in Enumerable.Range(1, parts - 1))
             {
@@ -289,7 +290,8 @@ namespace Mod
                 var position = foundRound.RoundCenterPos + normal * radius;
                 var direction = normal.Turn90(foundRound.IsClockWise);
 
-                points.Add(new NodePoint(position, direction));
+                //points.Add(new NodePoint(position, direction));
+                points.Add(new DirectionPoint(position, direction));
             }
 
             return points;

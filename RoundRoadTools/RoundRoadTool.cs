@@ -71,7 +71,7 @@ namespace Mod
         private bool CanBuild => Status == SelectedStatus.All;
         private bool LetBuild { get; set; } = false;
 
-        private List<NodePointExtended> CalculatedPoints { get; set; }
+        private List<DirectionPointExtended> CalculatedPoints { get; set; }
         #endregion
 
         #region PUBLIC
@@ -330,12 +330,11 @@ namespace Mod
             Render(CalculatedPoints);
             if (Parallel)
             {
-                var delta = CalculatedPoints.First().Shift;
-                var parallelPoints = CalculatedPoints.Select(p => new NodePointExtended(p.Position + p.Shift.normalized * 2 * (p.Shift.magnitude - delta.magnitude), p.Direction, -p.Shift, p.Shift == delta ? p.NodeId : (ushort)0, p.Height)).ToList();
+                var parallelPoints = GetParallelPoints(CalculatedPoints);
                 Render(parallelPoints);
             }
 
-            void Render(List<NodePointExtended> points)
+            void Render(List<DirectionPointExtended> points)
             {
                 var segments = Calculation.CalculateSegments(points);
                 foreach (var segment in segments)
@@ -359,77 +358,77 @@ namespace Mod
             var width = Calculation.LineCount * P;
             RenderManager.OverlayEffect.DrawBezier(cameraInfo, color, bezier, width, width / 2, width / 2, -1f, 1280f, false, true);
         }
-        private void RenderRoadSegment(NodePoint start, NodePoint end)
-        {
-            Debug.Log($"Рендер сегмента\n{start}\n{end}");
+        //private void RenderRoadSegment(NodePoint start, NodePoint end)
+        //{
+        //    Debug.Log($"Рендер сегмента\n{start}\n{end}");
 
-            var manager = NetManager;
-            var materialBlock = manager.m_materialBlock;
-            materialBlock.Clear();
+        //    var manager = NetManager;
+        //    var materialBlock = manager.m_materialBlock;
+        //    materialBlock.Clear();
 
-            var startPos = start.Position.ToVector3Terrain();
-            var startDir = start.Direction.ToVector3(norm: true);
+        //    var startPos = start.Position.ToVector3Terrain();
+        //    var startDir = start.Direction.ToVector3(norm: true);
 
-            var endPos = end.Position.ToVector3Terrain();
-            var endDir = end.Direction.ToVector3(norm: true);
+        //    var endPos = end.Position.ToVector3Terrain();
+        //    var endDir = end.Direction.ToVector3(norm: true);
 
-            var middlePos = (startPos + endPos) / 2;
+        //    var middlePos = (startPos + endPos) / 2;
 
-            var startDirNormal = start.Direction.Turn90(false).ToVector3(norm: true);
-            var endDirNormal = end.Direction.Turn90(false).ToVector3(norm: true);
+        //    var startDirNormal = start.Direction.Turn90(false).ToVector3(norm: true);
+        //    var endDirNormal = end.Direction.Turn90(false).ToVector3(norm: true);
 
-            var startHalfWidth = startDirNormal * NetInfo.m_halfWidth;
-            var endHalfWidth = endDirNormal * NetInfo.m_halfWidth;
+        //    var startHalfWidth = startDirNormal * NetInfo.m_halfWidth;
+        //    var endHalfWidth = endDirNormal * NetInfo.m_halfWidth;
 
-            var startLeft = startPos - startHalfWidth;
-            var startRight = startPos + startHalfWidth;
+        //    var startLeft = startPos - startHalfWidth;
+        //    var startRight = startPos + startHalfWidth;
 
-            var endLeft = endPos - endHalfWidth;
-            var endRight = endPos + endHalfWidth;
+        //    var endLeft = endPos - endHalfWidth;
+        //    var endRight = endPos + endHalfWidth;
 
-            NetSegment.CalculateMiddlePoints(startLeft, startDir, endLeft, -endDir, true, true, out Vector3 startMiddleLeft, out Vector3 endMiddleLeft);
-            NetSegment.CalculateMiddlePoints(startRight, startDir, endRight, -endDir, true, true, out Vector3 startMiddleRight, out Vector3 endMiddleRight);
+        //    NetSegment.CalculateMiddlePoints(startLeft, startDir, endLeft, -endDir, true, true, out Vector3 startMiddleLeft, out Vector3 endMiddleLeft);
+        //    NetSegment.CalculateMiddlePoints(startRight, startDir, endRight, -endDir, true, true, out Vector3 startMiddleRight, out Vector3 endMiddleRight);
 
-            var vScale = NetInfo.m_netAI.GetVScale();
+        //    var vScale = NetInfo.m_netAI.GetVScale();
 
-            var leftMatrix = NetSegment.CalculateControlMatrix(startLeft, startMiddleLeft, endMiddleLeft, endLeft, startRight, startMiddleRight, endMiddleRight, endRight, middlePos, vScale);
-            var rightMatrix = NetSegment.CalculateControlMatrix(startRight, startMiddleRight, endMiddleRight, endRight, startLeft, startMiddleLeft, endMiddleLeft, endLeft, middlePos, vScale);
+        //    var leftMatrix = NetSegment.CalculateControlMatrix(startLeft, startMiddleLeft, endMiddleLeft, endLeft, startRight, startMiddleRight, endMiddleRight, endRight, middlePos, vScale);
+        //    var rightMatrix = NetSegment.CalculateControlMatrix(startRight, startMiddleRight, endMiddleRight, endRight, startLeft, startMiddleLeft, endMiddleLeft, endLeft, middlePos, vScale);
 
-            var meshScale = new Vector4(0.5f / NetInfo.m_halfWidth, 1f / NetInfo.m_segmentLength, 1f, 1f);
-            var turnMeshScale = new Vector4(-meshScale.x, -meshScale.y, meshScale.z, meshScale.w);
+        //    var meshScale = new Vector4(0.5f / NetInfo.m_halfWidth, 1f / NetInfo.m_segmentLength, 1f, 1f);
+        //    var turnMeshScale = new Vector4(-meshScale.x, -meshScale.y, meshScale.z, meshScale.w);
 
-            materialBlock.SetMatrix(manager.ID_LeftMatrix, leftMatrix);
-            materialBlock.SetMatrix(manager.ID_RightMatrices, rightMatrix);
-            materialBlock.SetVector(manager.ID_ObjectIndex, RenderManager.DefaultColorLocation);
-            materialBlock.SetColor(manager.ID_Color, NetInfo.m_color);
+        //    materialBlock.SetMatrix(manager.ID_LeftMatrix, leftMatrix);
+        //    materialBlock.SetMatrix(manager.ID_RightMatrices, rightMatrix);
+        //    materialBlock.SetVector(manager.ID_ObjectIndex, RenderManager.DefaultColorLocation);
+        //    materialBlock.SetColor(manager.ID_Color, NetInfo.m_color);
 
-            if (NetInfo.m_requireSurfaceMaps)
-            {
-                TerrainManager.GetSurfaceMapping(middlePos, out Texture surfaceTexA, out Texture surfaceTexB, out Vector4 surfaceMapping);
-                if (surfaceTexA != null)
-                {
-                    materialBlock.SetTexture(manager.ID_SurfaceTexA, surfaceTexA);
-                    materialBlock.SetTexture(manager.ID_SurfaceTexB, surfaceTexB);
-                    materialBlock.SetVector(manager.ID_SurfaceMapping, surfaceMapping);
-                }
-            }
+        //    if (NetInfo.m_requireSurfaceMaps)
+        //    {
+        //        TerrainManager.GetSurfaceMapping(middlePos, out Texture surfaceTexA, out Texture surfaceTexB, out Vector4 surfaceMapping);
+        //        if (surfaceTexA != null)
+        //        {
+        //            materialBlock.SetTexture(manager.ID_SurfaceTexA, surfaceTexA);
+        //            materialBlock.SetTexture(manager.ID_SurfaceTexB, surfaceTexB);
+        //            materialBlock.SetVector(manager.ID_SurfaceMapping, surfaceMapping);
+        //        }
+        //    }
 
-            //Debug.Log($"{nameof(startLeft)} = {startLeft}\n{nameof(startMiddleLeft)} = {startMiddleLeft}\n{nameof(endMiddleLeft)} = {endMiddleLeft}\n{nameof(endLeft)} = {endLeft}\n{nameof(startRight)} = {startRight}\n{nameof(startMiddleRight)} = {startMiddleRight}\n{nameof(endMiddleRight)} = {endMiddleRight}\n{nameof(endRight)} = {endRight}\n{nameof(middlePos)} = {middlePos}\n{nameof(vScale)} = {vScale}\n{nameof(meshScale)} = {meshScale}");
+        //    //Debug.Log($"{nameof(startLeft)} = {startLeft}\n{nameof(startMiddleLeft)} = {startMiddleLeft}\n{nameof(endMiddleLeft)} = {endMiddleLeft}\n{nameof(endLeft)} = {endLeft}\n{nameof(startRight)} = {startRight}\n{nameof(startMiddleRight)} = {startMiddleRight}\n{nameof(endMiddleRight)} = {endMiddleRight}\n{nameof(endRight)} = {endRight}\n{nameof(middlePos)} = {middlePos}\n{nameof(vScale)} = {vScale}\n{nameof(meshScale)} = {meshScale}");
 
-            foreach (var segment in NetInfo.m_segments)
-            {
-                if (!segment.CheckFlags(NetSegment.Flags.None, out bool turnAround))
-                {
-                    Debug.Log("continue");
-                    continue;
-                }
+        //    foreach (var segment in NetInfo.m_segments)
+        //    {
+        //        if (!segment.CheckFlags(NetSegment.Flags.None, out bool turnAround))
+        //        {
+        //            Debug.Log("continue");
+        //            continue;
+        //        }
 
-                materialBlock.SetVector(manager.ID_MeshScale, turnAround ? turnMeshScale : meshScale);
-                ToolManager.m_drawCallData.m_defaultCalls += 1;
-                Graphics.DrawMesh(segment.m_segmentMesh, middlePos, Quaternion.identity, segment.m_segmentMaterial, segment.m_layer, null, 0, materialBlock);
-                Debug.Log("DrawMesh");
-            }
-        }
+        //        materialBlock.SetVector(manager.ID_MeshScale, turnAround ? turnMeshScale : meshScale);
+        //        ToolManager.m_drawCallData.m_defaultCalls += 1;
+        //        Graphics.DrawMesh(segment.m_segmentMesh, middlePos, Quaternion.identity, segment.m_segmentMaterial, segment.m_layer, null, 0, materialBlock);
+        //        Debug.Log("DrawMesh");
+        //    }
+        //}
 
         #endregion
 
@@ -610,6 +609,20 @@ namespace Mod
 
             return index;
         }
+        private List<DirectionPointExtended> GetParallelPoints(List<DirectionPointExtended> points)
+        {
+            var delta = points.First().Shift;
+            var parallelPoints = new List<DirectionPointExtended>();
+            foreach (var point in (points as IEnumerable<DirectionPointExtended>).Reverse())
+            {
+                var thisDelta = point.Shift.magnitude - delta.magnitude;
+                if (Math.Abs(thisDelta) < 0.1)
+                    parallelPoints.Add(new DirectionPointExtended(point.Point, -point.Direction, -point.Shift));
+                else
+                    parallelPoints.Add(new DirectionPointExtended(point.Position + point.Shift.normalized * 2 * thisDelta, -point.Direction, -point.Shift, point.Height));
+            }
+            return parallelPoints;
+        }
 
         #endregion
 
@@ -627,6 +640,12 @@ namespace Mod
                 var segments = Calculation.CalculateSegments(CalculatedPoints);
                 foreach (var segment in segments)
                     BuildSegment(segment);
+                if (Parallel)
+                {
+                    var parallelSegments = Calculation.CalculateSegments(GetParallelPoints(CalculatedPoints));
+                    foreach (var parallelSegment in parallelSegments)
+                        BuildSegment(parallelSegment);
+                }
 
                 return true;
             }
@@ -652,7 +671,7 @@ namespace Mod
 
             return segmentId;
         }
-        public ushort BuildNode(NodePointExtended point, bool terrain = true)
+        public ushort BuildNode(DirectionPointExtended point, bool terrain = true)
         {
             if (point.NodeCreated)
                 return point.NodeId;
@@ -677,8 +696,8 @@ namespace Mod
             if (!CanBuild || Calced)
                 return;
 
-            var startPoint = new NodePoint(GetNodePosition(StartNodeId), GetNodeDirection(StartNodeId, StartSegmentId), StartNodeId);
-            var endPoint = new NodePoint(GetNodePosition(EndNodeId), GetNodeDirection(EndNodeId, EndSegmentId), EndNodeId);
+            var startPoint = new DirectionPoint(GetNodePosition(StartNodeId), GetNodeDirection(StartNodeId, StartSegmentId), nodeId: StartNodeId);
+            var endPoint = new DirectionPoint(GetNodePosition(EndNodeId), GetNodeDirection(EndNodeId, EndSegmentId), nodeId: EndNodeId);
 
             try
             {
@@ -725,65 +744,104 @@ namespace Mod
         public ushort NodeId { get; set; } = 0;
         public bool NodeCreated => NodeId != 0;
 
-        public Point(Vector2 position, ushort nodeId = 0, float height = 0)
+        public Point(Vector2 position, float height = 0, ushort nodeId = 0)
         {
             Position = position;
             Height = height;
             NodeId = nodeId;
         }
-        public override string ToString() => $"{nameof(Position)}: {Position.Info()}, {nameof(Height)}: {Height}}";
+        public Point(float positionX, float positionY, float height = 0, ushort nodeId = 0) : this(new Vector2(positionX, positionY), height, nodeId) { }
+
+        public override string ToString() => $"{nameof(Position)}: {Position.Info()}, {nameof(Height)}: {Height}";
     }
     public class DirectionPoint
     {
         public Point Point { get; set; }
         public Vector2 Direction { get; }
 
-        public override string ToString() => $"{Point}, {nameof(Direction)}: {Direction.Info()}";
-    }
-
-    public class NodePoint
-    {
-        public Vector2 Position { get; }
-        public Vector2 Direction { get; }
-        public float Height { get; set; }
-        public ushort NodeId { get; set; } = 0;
-        public bool NodeCreated => NodeId != 0;
-
-        public NodePoint(Vector2 position, Vector2 direction, ushort nodeId = 0, float height = 0)
+        public Vector2 Position => Point.Position;
+        public float Height
         {
-            Position = position;
-            Direction = direction.normalized;
-            Height = height;
-            NodeId = nodeId;
+            get => Point.Height;
+            set => Point.Height = value;
         }
-        public NodePoint(Vector3 position, Vector3 direction, ushort nodeId = 0) : this(VectorUtils.XZ(position), VectorUtils.XZ(direction), nodeId, position.y) { }
-        public NodePoint(float positionX, float positionZ, float directionX, float directionZ, ushort nodeId = 0, float height = 0) : this(new Vector2(positionX, positionZ), new Vector2(directionX, directionZ), nodeId, height) { }
+        public ushort NodeId
+        {
+            get => Point.NodeId;
+            set => Point.NodeId = value;
+        }
+        public bool NodeCreated => Point.NodeCreated;
 
-        public static NodePoint operator -(NodePoint point) => new NodePoint(point.Position, -point.Direction, point.NodeId, point.Height);
+        public DirectionPoint(Point point, Vector2 direction)
+        {
+            Point = point;
+            Direction = direction.normalized;
+        }
+        public DirectionPoint(Vector2 position, Vector2 direction, float height = 0, ushort nodeId = 0) : this(new Point(position, height, nodeId), direction) { }
+        public DirectionPoint(Vector3 position, Vector3 direction, ushort nodeId = 0) : this(VectorUtils.XZ(position), VectorUtils.XZ(direction), position.y, nodeId) { }
 
-        public override string ToString() => $"{nameof(Position)}: {Position.Info()}, {nameof(Height)}: {Height}, {nameof(Direction)}: {Direction.Info()}";
+        public override string ToString() => $"{Point}, {nameof(Direction)}: {Direction.Info()}";
+
+        public static DirectionPoint operator -(DirectionPoint dirPoint) => new DirectionPoint(dirPoint.Point, -dirPoint.Direction);
     }
-    public class NodePointExtended : NodePoint
+    public class DirectionPointExtended : DirectionPoint
     {
         public Vector2 Shift { get; set; }
-        public Vector2 ShiftPosition => Position + Shift;
+        public Vector2 ShiftPosition => Point.Position + Shift;
         public bool HasShift => Shift != Vector2.zero;
-        public NodePointExtended(Vector2 position, Vector2 direction, Vector2? shift = null, ushort nodeId = 0, float height = 0) : base(position, direction, nodeId, height)
+
+        public DirectionPointExtended(Point point, Vector2 direction, Vector2? shift = null) : base(point, direction)
         {
             Shift = shift ?? Vector2.zero;
         }
-        public NodePointExtended(NodePoint point, Vector2? shift = null, ushort nodeId = 0, float height = 0) : this(point.Position, point.Direction, shift, nodeId, height) { }
-
-        public static NodePointExtended operator -(NodePointExtended point) => new NodePointExtended(point.Position, -point.Direction, point.Shift, point.NodeId, point.Height);
-
-        public NodePointExtended Invert() => Shift == Vector2.zero ? this : new NodePointExtended(Position - 2 * Shift, Direction, -Shift, height: Height);
+        public DirectionPointExtended(Vector2 position, Vector2 direction, Vector2? shift = null, float height = 0, ushort nodeId = 0) : this(new Point(position, height, nodeId), direction, shift) { }
 
         public override string ToString() => $"{base.ToString()}, {nameof(Shift)}: {Shift.Info()}";
     }
+
+    //public class NodePoint
+    //{
+    //    public Vector2 Position { get; }
+    //    public Vector2 Direction { get; }
+    //    public float Height { get; set; }
+    //    public ushort NodeId { get; set; } = 0;
+    //    public bool NodeCreated => NodeId != 0;
+
+    //    public NodePoint(Vector2 position, Vector2 direction, ushort nodeId = 0, float height = 0)
+    //    {
+    //        Position = position;
+    //        Direction = direction.normalized;
+    //        Height = height;
+    //        NodeId = nodeId;
+    //    }
+    //    public NodePoint(Vector3 position, Vector3 direction, ushort nodeId = 0) : this(VectorUtils.XZ(position), VectorUtils.XZ(direction), nodeId, position.y) { }
+    //    public NodePoint(float positionX, float positionZ, float directionX, float directionZ, ushort nodeId = 0, float height = 0) : this(new Vector2(positionX, positionZ), new Vector2(directionX, directionZ), nodeId, height) { }
+
+    //    public static NodePoint operator -(NodePoint point) => new NodePoint(point.Position, -point.Direction, point.NodeId, point.Height);
+
+    //    public override string ToString() => $"{nameof(Position)}: {Position.Info()}, {nameof(Height)}: {Height}, {nameof(Direction)}: {Direction.Info()}";
+    //}
+    //public class NodePointExtended : NodePoint
+    //{
+    //    public Vector2 Shift { get; set; }
+    //    public Vector2 ShiftPosition => Position + Shift;
+    //    public bool HasShift => Shift != Vector2.zero;
+    //    public NodePointExtended(Vector2 position, Vector2 direction, Vector2? shift = null, ushort nodeId = 0, float height = 0) : base(position, direction, nodeId, height)
+    //    {
+    //        Shift = shift ?? Vector2.zero;
+    //    }
+    //    public NodePointExtended(NodePoint point, Vector2? shift = null, ushort nodeId = 0, float height = 0) : this(point.Position, point.Direction, shift, nodeId, height) { }
+
+    //    public static NodePointExtended operator -(NodePointExtended point) => new NodePointExtended(point.Position, -point.Direction, point.Shift, point.NodeId, point.Height);
+
+    //    public NodePointExtended Invert() => Shift == Vector2.zero ? this : new NodePointExtended(Position - 2 * Shift, Direction, -Shift, height: Height);
+
+    //    public override string ToString() => $"{base.ToString()}, {nameof(Shift)}: {Shift.Info()}";
+    //}
     public class Segment
     {
-        public NodePointExtended Start { get; }
-        public NodePointExtended End { get; }
+        public DirectionPointExtended Start { get; }
+        public DirectionPointExtended End { get; }
 
         public Vector3 StartDirection => Start.Direction.ToVector3(norm: true);
         public Vector3 EndDirection => -End.Direction.ToVector3(norm: true);
@@ -797,7 +855,7 @@ namespace Mod
         public bool HasShift => Start.HasShift || End.HasShift;
         public bool ShiftChange => Mathf.Abs(Start.Shift.magnitude - End.Shift.magnitude) > 0.1;
 
-        public Segment(NodePointExtended startPoint, NodePointExtended endPoint)
+        public Segment(DirectionPointExtended startPoint, DirectionPointExtended endPoint)
         {
             Start = startPoint;
             End = endPoint;
