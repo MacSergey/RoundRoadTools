@@ -59,7 +59,7 @@ namespace Mod
         private Param<ushort> EndSegmentId { get; } = new Param<ushort>(0, ushort.MinValue, ushort.MaxValue);
 
         private bool ShowShift { get; set; } = DefaultShowShift;
-        private bool Parallel { get; set; } = false;
+        private ParallelMode Parallel { get; set; } = ParallelMode.None;
 
 
         private bool StartNodeSelected => StartNodeId != 0;
@@ -301,6 +301,8 @@ namespace Mod
 
             var segment = GetSegment(segmentId);
 
+
+
             Bezier3 bezier;
             bezier.a = GetNodePosition(segment.m_startNode);
             bezier.d = GetNodePosition(segment.m_endNode);
@@ -328,11 +330,7 @@ namespace Mod
             }
 
             Render(CalculatedPoints);
-            if (Parallel)
-            {
-                var parallelPoints = GetParallelPoints(CalculatedPoints);
-                Render(parallelPoints);
-            }
+            Render(GetParallelPoints(CalculatedPoints, Parallel));
 
             void Render(List<DirectionPointExtended> points)
             {
@@ -518,7 +516,18 @@ namespace Mod
             if (KeyMapping.Parallel.IsPressed(e))
             {
                 Debug.Log($"нажата {nameof(KeyMapping.Parallel)}");
-                Parallel = !Parallel;
+                switch (Parallel)
+                {
+                    case ParallelMode.None:
+                        Parallel = ParallelMode.Start;
+                        break;
+                    case ParallelMode.Start:
+                        Parallel = ParallelMode.End;
+                        break;
+                    case ParallelMode.End:
+                        Parallel = ParallelMode.None;
+                        break;
+                }
             }
             if (KeyMapping.Build.IsPressed(e))
             {
@@ -609,10 +618,23 @@ namespace Mod
 
             return index;
         }
-        private List<DirectionPointExtended> GetParallelPoints(List<DirectionPointExtended> points)
+        private List<DirectionPointExtended> GetParallelPoints(List<DirectionPointExtended> points, ParallelMode parallel)
         {
-            var delta = points.First().Shift;
             var parallelPoints = new List<DirectionPointExtended>();
+
+            var delta = Vector2.zero;
+            switch (parallel)
+            {
+                case ParallelMode.None:
+                    return parallelPoints;
+                case ParallelMode.Start:
+                    delta = points.First().Shift;
+                    break;
+                case ParallelMode.End:
+                    delta = points.Last().Shift;
+                    break;
+            }
+
             foreach (var point in (points as IEnumerable<DirectionPointExtended>).Reverse())
             {
                 var thisDelta = point.Shift.magnitude - delta.magnitude;
@@ -640,12 +662,11 @@ namespace Mod
                 var segments = Calculation.CalculateSegments(CalculatedPoints);
                 foreach (var segment in segments)
                     BuildSegment(segment);
-                if (Parallel)
-                {
-                    var parallelSegments = Calculation.CalculateSegments(GetParallelPoints(CalculatedPoints));
-                    foreach (var parallelSegment in parallelSegments)
-                        BuildSegment(parallelSegment);
-                }
+
+                var parallelSegments = Calculation.CalculateSegments(GetParallelPoints(CalculatedPoints, Parallel));
+                foreach (var parallelSegment in parallelSegments)
+                    BuildSegment(parallelSegment);
+
 
                 return true;
             }
@@ -719,9 +740,10 @@ namespace Mod
             }
         }
 
-        
+
 
         #endregion
+
     }
 
     [Flags]
@@ -736,6 +758,12 @@ namespace Mod
     {
         Forward = 0,
         Backward = 1
+    }
+    public enum ParallelMode
+    {
+        None,
+        Start,
+        End
     }
     public class Point
     {
@@ -799,45 +827,6 @@ namespace Mod
         public override string ToString() => $"{base.ToString()}, {nameof(Shift)}: {Shift.Info()}";
     }
 
-    //public class NodePoint
-    //{
-    //    public Vector2 Position { get; }
-    //    public Vector2 Direction { get; }
-    //    public float Height { get; set; }
-    //    public ushort NodeId { get; set; } = 0;
-    //    public bool NodeCreated => NodeId != 0;
-
-    //    public NodePoint(Vector2 position, Vector2 direction, ushort nodeId = 0, float height = 0)
-    //    {
-    //        Position = position;
-    //        Direction = direction.normalized;
-    //        Height = height;
-    //        NodeId = nodeId;
-    //    }
-    //    public NodePoint(Vector3 position, Vector3 direction, ushort nodeId = 0) : this(VectorUtils.XZ(position), VectorUtils.XZ(direction), nodeId, position.y) { }
-    //    public NodePoint(float positionX, float positionZ, float directionX, float directionZ, ushort nodeId = 0, float height = 0) : this(new Vector2(positionX, positionZ), new Vector2(directionX, directionZ), nodeId, height) { }
-
-    //    public static NodePoint operator -(NodePoint point) => new NodePoint(point.Position, -point.Direction, point.NodeId, point.Height);
-
-    //    public override string ToString() => $"{nameof(Position)}: {Position.Info()}, {nameof(Height)}: {Height}, {nameof(Direction)}: {Direction.Info()}";
-    //}
-    //public class NodePointExtended : NodePoint
-    //{
-    //    public Vector2 Shift { get; set; }
-    //    public Vector2 ShiftPosition => Position + Shift;
-    //    public bool HasShift => Shift != Vector2.zero;
-    //    public NodePointExtended(Vector2 position, Vector2 direction, Vector2? shift = null, ushort nodeId = 0, float height = 0) : base(position, direction, nodeId, height)
-    //    {
-    //        Shift = shift ?? Vector2.zero;
-    //    }
-    //    public NodePointExtended(NodePoint point, Vector2? shift = null, ushort nodeId = 0, float height = 0) : this(point.Position, point.Direction, shift, nodeId, height) { }
-
-    //    public static NodePointExtended operator -(NodePointExtended point) => new NodePointExtended(point.Position, -point.Direction, point.Shift, point.NodeId, point.Height);
-
-    //    public NodePointExtended Invert() => Shift == Vector2.zero ? this : new NodePointExtended(Position - 2 * Shift, Direction, -Shift, height: Height);
-
-    //    public override string ToString() => $"{base.ToString()}, {nameof(Shift)}: {Shift.Info()}";
-    //}
     public class Segment
     {
         public DirectionPointExtended Start { get; }

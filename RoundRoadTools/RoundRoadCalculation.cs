@@ -24,7 +24,8 @@ namespace Mod
                 new Line(4.0f, "1R4"), 
                 new Line(4.5f, "1R4P"), 
                 new Line(5.0f, "1R5"), 
-                new Line(5.5f, "1R5P") 
+                new Line(5.5f, "1R5P"),
+                new Line(6.0f, "1R6")
             } },
             {2, new Line[] {
                 new Line(1.0f, "2R"),
@@ -54,7 +55,7 @@ namespace Mod
 
                 var delta = EndShift - StartShift;
 
-                var shifts = (delta >= 0 ? lines.Skip(StartShift).Take(delta) : lines.Skip(EndShift).Take(-delta).Reverse()).ToArray();
+                var shifts = (delta >= 0 ? lines.Skip(StartShift).Take(delta + 1) : lines.Skip(EndShift).Take(-delta + 1).Reverse()).ToArray();
                 return shifts;
             }
         }
