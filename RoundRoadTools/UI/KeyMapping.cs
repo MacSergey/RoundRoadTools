@@ -25,6 +25,9 @@ namespace Mod.UI
         public static SavedInputKey ShiftBeginPlus { get; } = new SavedInputKey(nameof(ShiftBeginPlus), UserMod.SettingsFile, SavedInputKey.Encode(KeyCode.RightBracket, false, false, false), true);
         public static SavedInputKey ShiftBeginMinus { get; } = new SavedInputKey(nameof(ShiftBeginMinus), UserMod.SettingsFile, SavedInputKey.Encode(KeyCode.LeftBracket, false, false, false), true);
 
+        public static SavedInputKey LinesPlus { get; } = new SavedInputKey(nameof(LinesPlus), UserMod.SettingsFile, SavedInputKey.Encode(KeyCode.RightBracket, false, true, false), true);
+        public static SavedInputKey LinesMinus { get; } = new SavedInputKey(nameof(LinesMinus), UserMod.SettingsFile, SavedInputKey.Encode(KeyCode.LeftBracket, false, true, false), true);
+
         public static SavedInputKey SandGlass { get; } = new SavedInputKey(nameof(SandGlass), UserMod.SettingsFile, SavedInputKey.Encode(KeyCode.K, false, false, false), true);
 
         public static SavedInputKey ShowShift { get; } = new SavedInputKey(nameof(ShowShift), UserMod.SettingsFile, SavedInputKey.Encode(KeyCode.L, false, false, false), true);
@@ -32,6 +35,9 @@ namespace Mod.UI
         public static SavedInputKey Build { get; } = new SavedInputKey(nameof(Build), UserMod.SettingsFile, SavedInputKey.Encode(KeyCode.Return, false, false, false), true);
 
         public static SavedInputKey Parallel { get; } = new SavedInputKey(nameof(Parallel), UserMod.SettingsFile, SavedInputKey.Encode(KeyCode.P, false, false, false), true);
+
+        public static SavedInputKey Copy { get; } = new SavedInputKey(nameof(Copy), UserMod.SettingsFile, SavedInputKey.Encode(KeyCode.C, true, true, true), true);
+        public static SavedInputKey Paste { get; } = new SavedInputKey(nameof(Paste), UserMod.SettingsFile, SavedInputKey.Encode(KeyCode.C, true, true, true), true);
 
         private SavedInputKey EditingBinding { get; set; }
 
@@ -53,6 +59,9 @@ namespace Mod.UI
 
             AddKeymapping(Localize.HotkeyShiftBeginPlus, ShiftBeginPlus);
             AddKeymapping(Localize.HotkeyShiftBeginMinus, ShiftBeginMinus);
+
+            AddKeymapping(Localize.HotkeyLinesPlus, LinesPlus);
+            AddKeymapping(Localize.HotkeyLinesMinus, LinesMinus);
 
             AddKeymapping(Localize.HotkeySandGlass, SandGlass);
 

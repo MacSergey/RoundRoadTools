@@ -129,6 +129,12 @@
   <data name="HotkeyEndShiftPlus" xml:space="preserve">
     <value>Увеличить конечное смещение</value>
   </data>
+  <data name="HotkeyLinesMinus" xml:space="preserve">
+    <value>Уменьшить количество полос</value>
+  </data>
+  <data name="HotkeyLinesPlus" xml:space="preserve">
+    <value>Увеличить количество полос</value>
+  </data>
   <data name="HotkeyParallel" xml:space="preserve">
     <value>Строить параллельную</value>
   </data>

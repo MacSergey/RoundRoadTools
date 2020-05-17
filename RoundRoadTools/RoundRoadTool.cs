@@ -5,7 +5,11 @@ using ColossalFramework.UI;
 using Mod.UI;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
+using System.Xml;
+using System.Xml.Linq;
 using UnityEngine;
 
 namespace Mod
@@ -32,6 +36,7 @@ namespace Mod
         public static bool DefaultSandGlass => false;
         public static bool DefaultShowShift => false;
         public static int DefaultShift => 0;
+        public static int DefaultLines => 1;
 
 
         #endregion
@@ -104,6 +109,7 @@ namespace Mod
             Calculation.EndShift.OnChange += OnParamChange;
             Calculation.LineCount.OnChange += OnParamChange;
             Calculation.ShiftBegin.OnChange += OnParamChange;
+            Calculation.LineCount.OnChange += OnParamChange;
         }
 
 
@@ -126,6 +132,7 @@ namespace Mod
             Calculation.Radius.Value = DefaultRadius;
             Calculation.SegmentLenght.Value = DefaultSegmentLenght;
             Calculation.MustSandGlass.Value = DefaultSandGlass;
+            Calculation.LineCount.Value = DefaultLines;
             Calculation.StartShift.Value = DefaultShift;
             Calculation.EndShift.Value = DefaultShift;
         }
@@ -503,6 +510,17 @@ namespace Mod
                 Calculation.ShiftBegin.Value -= 1;
             }
 
+            if (KeyMapping.LinesPlus.IsPressed(e))
+            {
+                Debug.Log($"нажата {nameof(KeyMapping.LinesPlus)}");
+                Calculation.LineCount.Value += 1;
+            }
+            if (KeyMapping.LinesMinus.IsPressed(e))
+            {
+                Debug.Log($"нажата {nameof(KeyMapping.LinesMinus)}");
+                Calculation.LineCount.Value -= 1;
+            }
+
             if (KeyMapping.SandGlass.IsPressed(e))
             {
                 Debug.Log($"нажата {nameof(KeyMapping.SandGlass)}");
@@ -533,6 +551,16 @@ namespace Mod
             {
                 Debug.Log($"нажата {nameof(KeyMapping.Build)}");
                 LetBuild = true;
+            }
+            if (KeyMapping.Copy.IsPressed(e))
+            {
+                Debug.Log($"нажата {nameof(KeyMapping.Copy)}");
+                Copy();
+            }
+            if (KeyMapping.Paste.IsPressed(e))
+            {
+                Debug.Log($"нажата {nameof(KeyMapping.Paste)}");
+                Copy();
             }
         }
 
@@ -744,6 +772,171 @@ namespace Mod
 
         #endregion
 
+        public XmlDocument XmlDocument { get; set; }
+        public void Copy()
+        {
+            Debug.Log("START RECOVERY");
+
+            var xdoc = new XmlDocument();
+
+            var xmlDeclaration = xdoc.CreateXmlDeclaration("1.0", "UTF-8", null);
+            xdoc.AppendChild(xmlDeclaration);
+
+            var xroot = xdoc.CreateElement("catalog");
+
+            for (ushort i = 0; i < ushort.MaxValue; i += 1)
+            {
+                try
+                {
+                    var node = NetManager.m_nodes.m_buffer[i];
+
+                    if (node.m_position == Vector3.zero)
+                        continue;
+
+                    if (node.m_position.x > 4800 || node.m_position.x < -4800 || node.m_position.z > 4800 || node.m_position.z < -4800)
+                        continue;
+
+                    Debug.Log($"node{i}: {node.m_position}");
+                    var xnode = xdoc.CreateElement(nameof(node));
+
+                    AddAttr(xnode, "i", i.ToString());
+                    AddAttr(xnode, "info", node.Info.m_netAI.name);
+
+                    AddAttr(xnode, nameof(node.m_position.x), node.m_position.x.ToString());
+                    AddAttr(xnode, nameof(node.m_position.y), node.m_position.y.ToString());
+                    AddAttr(xnode, nameof(node.m_position.z), node.m_position.z.ToString());
+
+                    xroot.AppendChild(xnode);
+                }
+                catch { }
+            }
+
+            for (ushort i = 0; i < ushort.MaxValue; i += 1)
+            {
+                try
+                {
+                    var segment = NetManager.m_segments.m_buffer[i];
+
+                    if (segment.m_startNode == 0 && segment.m_endNode == 0)
+                        continue;
+
+                    Debug.Log($"segment{i}: start = {segment.m_startNode}; end = {segment.m_endNode}");
+
+                    var xsegment = xdoc.CreateElement(nameof(segment));
+
+                    AddAttr(xsegment, "i", i.ToString());
+                    AddAttr(xsegment, "info", segment.Info.m_netAI.name);
+
+                    AddAttr(xsegment, "startNode", segment.m_startNode.ToString());
+                    AddAttr(xsegment, "startx", segment.m_startDirection.x.ToString());
+                    AddAttr(xsegment, "starty", segment.m_startDirection.y.ToString());
+                    AddAttr(xsegment, "startz", segment.m_startDirection.z.ToString());
+
+                    AddAttr(xsegment, "endNode", segment.m_endNode.ToString());
+                    AddAttr(xsegment, "endx", segment.m_endDirection.x.ToString());
+                    AddAttr(xsegment, "endy", segment.m_endDirection.y.ToString());
+                    AddAttr(xsegment, "endz", segment.m_endDirection.z.ToString());
+
+                    AddAttr(xsegment, "invert", segment.m_flags.IsFlagSet(NetSegment.Flags.Invert).ToString());
+
+                    xroot.AppendChild(xsegment);
+                }
+                catch { }
+            }
+
+            xdoc.AppendChild(xroot);
+
+            using (FileStream stream = new FileStream("recovery.xml", FileMode.Create))
+            {
+                xdoc.Save(stream);
+                Debug.Log("RECOVERY SAVE");
+            }
+            XmlDocument = xdoc;
+
+            void AddAttr(XmlElement element, string name, string value)
+            {
+                var attr = xdoc.CreateAttribute(name);
+                var attrValue = xdoc.CreateTextNode(value);
+                attr.AppendChild(attrValue);
+                element.Attributes.Append(attr);
+            }
+        }
+        public void Paste()
+        {
+            Debug.Log("START RECOVERY");
+
+            try
+            {
+
+                var xdoc = new XmlDocument();
+
+                using (FileStream stream = new FileStream("recovery.xml", FileMode.Open))
+                {
+                    xdoc.Load(stream);
+                }
+                
+
+                var random = new Randomizer();
+
+                var bridge = new Dictionary<ushort, ushort>();
+                foreach (var element in xdoc.DocumentElement.ChildNodes.OfType<XmlElement>().Where(i => i.Name == "node"))
+                {
+                    var i = ushort.Parse(element.GetAttribute("i"));
+                    var info = element.GetAttribute("info");
+                    var x = float.Parse(element.GetAttribute("x"));
+                    var y = float.Parse(element.GetAttribute("y"));
+                    var z = float.Parse(element.GetAttribute("z"));
+                    var position = new Vector3(x, y, z);
+
+                    if (!Regex.IsMatch(info, @".+\..+"))
+                        continue;
+
+                    var netInfo = PrefabCollection<NetInfo>.FindLoaded(info);
+                    NetManager.CreateNode(out ushort newNodeId, ref random, netInfo, position, GetCurrentBuildIndex());
+
+                    bridge[i] = newNodeId;
+
+                    Debug.Log($"Node created: {i}-{newNodeId}; {position}; {info}");
+                }
+
+                foreach (var element in xdoc.DocumentElement.ChildNodes.OfType<XmlElement>().Where(i => i.Name == "segment"))
+                {
+                    var i = ushort.Parse(element.GetAttribute("i"));
+                    var info = element.GetAttribute("info");
+
+                    var startNode = ushort.Parse(element.GetAttribute("startNode"));
+                    var endNode = ushort.Parse(element.GetAttribute("endNode"));
+
+                    var startx = float.Parse(element.GetAttribute("startx"));
+                    var starty = float.Parse(element.GetAttribute("starty"));
+                    var startz = float.Parse(element.GetAttribute("startz"));
+                    var startDir = new Vector3(startx, starty, startz);
+
+                    var endx = float.Parse(element.GetAttribute("endx"));
+                    var endy = float.Parse(element.GetAttribute("endy"));
+                    var endz = float.Parse(element.GetAttribute("endz"));
+                    var endDir = new Vector3(endx, endy, endz);
+
+                    var invert = bool.Parse(element.GetAttribute("invert"));
+
+                    if (!Regex.IsMatch(info, @".*\..*"))
+                        continue;
+                    if (!bridge.TryGetValue(startNode, out ushort startNodeId) || !bridge.TryGetValue(endNode, out ushort endNodeId))
+                        continue;
+
+                    var netInfo = PrefabCollection<NetInfo>.FindLoaded(info);
+                    NetManager.CreateSegment(out ushort segmentId, ref random, netInfo, startNodeId, endNodeId, startDir, endDir, GetCurrentBuildIndex(), GetCurrentBuildIndex(), invert);
+
+                    Debug.Log($"Segment created: {i}-{segmentId}; {startNodeId} - {startDir}; {endNodeId} - {endDir}");
+                }
+
+                Debug.Log("RECOVERY COMPLITE");
+            }
+            catch (Exception error)
+            {
+                Debug.Log($"RECOVERY FAILD: {error.Message} {error.StackTrace}");
+            }
+        }
     }
 
     [Flags]
@@ -854,20 +1047,46 @@ namespace Mod
     public class Param<T> where T : IComparable<T>
     {
         private T _value;
+        private T _maxValue;
+        private T _minValue;
         public T Value
         {
             get => _value;
             set
             {
-                if (Equal(_value, value))
+                var newValue = Max(Min(value, MaxValue), MinValue);
+
+                if (Equal(_value, newValue))
                     return;
 
-                _value = Max(Min(value, MaxValue), MinValue);
+                _value = newValue;
                 OnChange?.Invoke();
             }
         }
-        public T MaxValue { get; }
-        public T MinValue { get; }
+        public T MaxValue
+        {
+            get => _maxValue;
+            set
+            {
+                if (Equal(_maxValue, value))
+                    return;
+
+                _maxValue = value;
+                Value = Value;
+            }
+        }
+        public T MinValue
+        {
+            get => _minValue;
+            set
+            {
+                if (Equal(_minValue, value))
+                    return;
+
+                _minValue = value;
+                Value = Value;
+            }
+        }
         public event Action OnChange;
         public Param(T value, T minValue, T maxValue)
         {

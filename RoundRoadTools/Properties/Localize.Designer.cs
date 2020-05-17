@@ -97,6 +97,24 @@ namespace Mod {
         }
         
         /// <summary>
+        ///   Ищет локализованную строку, похожую на Уменьшить количество полос.
+        /// </summary>
+        internal static string HotkeyLinesMinus {
+            get {
+                return ResourceManager.GetString("HotkeyLinesMinus", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Ищет локализованную строку, похожую на Увеличить количество полос.
+        /// </summary>
+        internal static string HotkeyLinesPlus {
+            get {
+                return ResourceManager.GetString("HotkeyLinesPlus", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Ищет локализованную строку, похожую на Строить параллельную.
         /// </summary>
         internal static string HotkeyParallel {

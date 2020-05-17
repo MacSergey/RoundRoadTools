@@ -23,14 +23,38 @@ namespace Mod
                 new Line(3.5f, "1R3P"), 
                 new Line(4.0f, "1R4"), 
                 new Line(4.5f, "1R4P"), 
-                new Line(5.0f, "1R5"), 
                 new Line(5.5f, "1R5P"),
-                new Line(6.0f, "1R6")
+                new Line(6.0f, "1R6"),
+                new Line(7.0f, "1R7")
             } },
             {2, new Line[] {
                 new Line(1.0f, "2R"),
                 new Line(2.0f, "2R3"),
                 new Line(3.5f, "2R4P"),
+                new Line(4.5f, "2R5P"),
+                new Line(5.5f, "2R6P"),
+                new Line(6f, "2R7"),
+            } },
+            {3, new Line[] {
+                new Line(1.0f, "3R"),
+                new Line(2.0f, "3R4"),
+                new Line(2.5f, "3R4P"),
+                new Line(3.5f, "3R5P"),
+                new Line(4.5f, "4R6P")
+            } },
+            {4, new Line[] {
+                new Line(1.0f, "4R"),
+                new Line(2.0f, "4R5"),
+                new Line(2.5f, "4R5P"),
+                new Line(3.5f, "4R6P")
+            } },
+            {5, new Line[] {
+                new Line(1.0f, "5R"),
+                new Line(2.0f, "5R6"),
+            } },
+            {6, new Line[] {
+                new Line(1.0f, "6R"),
+                new Line(2.0f, "6R7"),
             } }
         };
 
@@ -61,6 +85,17 @@ namespace Mod
         }
         public float[] ShiftsValue => Shifts.Any() ? Shifts.Select(l => l.Shift * RoundRoadTools.P).ToArray() : new float[] { 0 };
 
+        public RoundRoadCalculation()
+        {
+            LineCount.OnChange += LineCountChange;
+        }
+
+        private void LineCountChange()
+        {
+            var shiftIndex = LineShifts[LineCount].Length;
+            StartShift.MaxValue = shiftIndex;
+            EndShift.MaxValue = shiftIndex;
+        }
 
         public List<DirectionPointExtended> CalculateRoad(DirectionPoint startRaw, DirectionPoint endRaw, Action<string> log = null)
         {
